@@ -1,0 +1,280 @@
+.container {
+  display: flex;
+  gap: 30px;
+  padding: 40px;
+  min-height: calc(100vh - 60px);
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+}
+
+.produtosGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  align-content: flex-start;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.cardImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background-color: #edf2f7;
+}
+
+.cardTitle {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #2d3748;
+  margin-bottom: 5px;
+}
+
+.cardPrice {
+  color: #5B0A1A;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.quantityInput {
+  width: 70px;
+  padding: 8px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.btnAdd {
+  flex: 1;
+  background-color: #5B0A1A;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.btnAdd:hover {
+  background-color: #4a0815;
+}
+
+.cartSidebar {
+  width: 350px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  position: sticky;
+  top: 40px;
+}
+
+@media (max-width: 768px) {
+  .cartSidebar {
+    width: 100%;
+    position: static;
+  }
+}
+
+.cartTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2d3748;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #edf2f7;
+  padding-bottom: 10px;
+}
+
+.cartItems {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+  margin-bottom: 20px;
+}
+
+.cartItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.cartItemDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.cartItemName {
+  font-weight: bold;
+  color: #4a5568;
+}
+
+.cartItemPrice {
+  color: #718096;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.cartItemRemove {
+  color: #e53e3e;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.cartTotal {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #2d3748;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-top: 10px;
+  border-top: 2px solid #edf2f7;
+}
+
+.btnFinalize {
+  background-color: #48bb78;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.btnFinalize:hover {
+  background-color: #38a169;
+}
+
+.btnFinalize:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #2d3748;
+}
+
+.inputGroup {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup label {
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #4a5568;
+}
+
+.inputGroup input, .inputGroup textarea {
+  padding: 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.btnCancelar {
+  background: #edf2f7;
+  color: #4a5568;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btnCancelar:hover {
+  background: #e2e8f0;
+}
+
+.btnConfirmar {
+  background: #5B0A1A;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btnConfirmar:hover {
+  background: #4a0815;
+}
+
+.emptyCart {
+  text-align: center;
+  color: #a0aec0;
+  padding: 20px 0;
+}

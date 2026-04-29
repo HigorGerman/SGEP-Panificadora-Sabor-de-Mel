@@ -1,0 +1,93 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #FDFCF5; /* Padaria Creme */
+  width: 100%;
+}
+
+.loginCard {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+  border-top: 8px solid #5B0A1A; /* Bordô no topo do card */
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  background-color: #5B0A1A;
+  padding: 20px;
+  border-radius: 8px 8px 0 0;
+}
+
+.title {
+  color: white;
+  font-size: 32px;
+  font-weight: 900;
+  margin: 0;
+}
+
+.subtitle {
+  color: #ffffff;
+  font-size: 14px;
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+.inputGroup input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.inputGroup input:focus {
+  border-color: #5B0A1A;
+}
+
+.loginBtn {
+  background-color: #5B0A1A;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.loginBtn:hover {
+  opacity: 0.9;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #999;
+}

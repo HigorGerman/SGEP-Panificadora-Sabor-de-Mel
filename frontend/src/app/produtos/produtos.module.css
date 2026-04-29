@@ -1,0 +1,47 @@
+.container { padding: 40px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.btnNovo { background-color: #5B0A1A; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; }
+
+.table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.table th, .table td { padding: 15px; text-align: left; border-bottom: 1px solid #edf2f7; }
+.table th { background-color: #f7fafc; color: #4a5568; }
+
+.btnEdit { color: #3182ce; background: none; border: none; margin-right: 10px; cursor: pointer; }
+.btnDelete { color: #e53e3e; background: none; border: none; cursor: pointer; }
+
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.inputGroup {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup label { margin-bottom: 5px; font-weight: bold; color: #4a5568; }
+.inputGroup input { padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; }
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btnCancelar { background: #edf2f7; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
+.btnSalvar { background: #5B0A1A; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }

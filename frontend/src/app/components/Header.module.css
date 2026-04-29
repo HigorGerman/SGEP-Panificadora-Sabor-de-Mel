@@ -1,0 +1,108 @@
+.header {
+  background-color: rgba(253, 252, 245, 0.85); /* #FDFCF5 com transparência */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  height: 60px; /* Thinner */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(91, 10, 26, 0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.logo {
+  color: #5B0A1A;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: -0.5px;
+}
+
+.logoSpan {
+  font-weight: 400;
+  color: #8c4a56;
+  font-size: 16px;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.loggedContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.profileIcon {
+  color: #5B0A1A;
+}
+
+.menuBtn {
+  background: white;
+  border: 1px solid rgba(0,0,0,0.05);
+  color: #5B0A1A;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.menuBtn:hover {
+  background: #f0f0f0;
+}
+
+.authButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.btnAcessar {
+  background-color: #5B0A1A;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.btnCriar {
+  background-color: transparent;
+  color: #5B0A1A;
+  border: 1px solid #5B0A1A;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}

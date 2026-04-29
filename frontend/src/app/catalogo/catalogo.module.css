@@ -1,0 +1,420 @@
+.container {
+  min-height: 100vh;
+  background-color: #FDFCF5;
+  padding: 40px 20px 100px 20px; /* bottom padding for floating cart */
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #333;
+}
+
+.contentWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #2d3748;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.searchContainer {
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  font-size: 1.2rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 18px 20px 18px 50px;
+  border-radius: 50px;
+  border: 1px solid #e2e8f0;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: #5B0A1A;
+  box-shadow: 0 4px 20px rgba(91, 10, 26, 0.1);
+}
+
+.productList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.productCard {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: white;
+  padding: 15px 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.productCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.cardLeft {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  margin-right: 20px;
+}
+
+.productImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%; /* circular as requested */
+  object-fit: cover;
+  background-color: #f1f1f1;
+}
+
+.cardCenter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.productName {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #2d3748;
+  margin-bottom: 5px;
+}
+
+.productPrice {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #5B0A1A;
+}
+
+.cardRight {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.qtyControl {
+  display: flex;
+  align-items: center;
+  background-color: #f7fafc;
+  border-radius: 50px;
+  border: 1px solid #edf2f7;
+  overflow: hidden;
+}
+
+.qtyBtn {
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.qtyBtn:hover {
+  background-color: #e2e8f0;
+}
+
+.qtyDisplay {
+  min-width: 30px;
+  text-align: center;
+  font-weight: bold;
+  color: #2d3748;
+}
+
+.btnAdd {
+  background-color: #5B0A1A;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 50px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btnAdd:hover {
+  background-color: #4a0815;
+  box-shadow: 0 4px 12px rgba(91, 10, 26, 0.3);
+}
+
+.btnAdd:active {
+  transform: scale(0.95);
+}
+
+/* FLOATING CART BAR */
+.floatingCart {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 20px 40px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+}
+
+.cartInfo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cartIconWrapper {
+  background-color: #FDFCF5;
+  color: #5B0A1A;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.cartText {
+  display: flex;
+  flex-direction: column;
+}
+
+.cartItemsCount {
+  font-size: 0.95rem;
+  color: #718096;
+  font-weight: 600;
+}
+
+.cartTotal {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #5B0A1A;
+}
+
+.btnOpenCart {
+  background-color: #48bb78;
+  color: white;
+  border: none;
+  padding: 14px 35px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+}
+
+.btnOpenCart:hover {
+  background-color: #38a169;
+}
+
+/* MODALS */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 500px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalTitle {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #2d3748;
+  margin-bottom: 15px;
+}
+
+.modalSubtitle {
+  color: #718096;
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.cartList {
+  text-align: left;
+  margin-bottom: 30px;
+  border-top: 1px solid #edf2f7;
+  padding-top: 20px;
+}
+
+.cartListItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.cartListItemName {
+  font-weight: bold;
+  color: #4a5568;
+}
+
+.cartListItemPrice {
+  color: #718096;
+}
+
+.cartListItemRemove {
+  color: #e53e3e;
+  background: none;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.modalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modalActionsRow {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.btnPrimary {
+  background-color: #5B0A1A;
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.btnPrimary:hover {
+  background-color: #4a0815;
+}
+
+.btnSecondary {
+  background-color: #edf2f7;
+  color: #4a5568;
+  border: none;
+  padding: 16px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.btnSecondary:hover {
+  background-color: #e2e8f0;
+}
+
+.btnOutline {
+  background-color: transparent;
+  color: #5B0A1A;
+  border: 2px solid #5B0A1A;
+  padding: 14px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.btnOutline:hover {
+  background-color: #5B0A1A;
+  color: white;
+}
+
+.inputGroup {
+  text-align: left;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup label {
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #4a5568;
+}
+
+.inputGroup input, .inputGroup textarea {
+  padding: 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+@media (max-width: 600px) {
+  .productCard {
+    flex-direction: column;
+    text-align: center;
+  }
+  .cardLeft {
+    margin-right: 0;
+    margin-bottom: 15px;
+    width: 120px;
+    height: 120px;
+  }
+  .cardRight {
+    margin-top: 15px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .floatingCart {
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .btnOpenCart {
+    width: 100%;
+  }
+  .modalActionsRow {
+    flex-direction: column;
+  }
+}
