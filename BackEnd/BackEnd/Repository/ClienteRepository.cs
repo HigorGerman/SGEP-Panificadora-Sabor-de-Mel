@@ -34,7 +34,7 @@ namespace BackEnd.Repository
                 cmd.Parameters.AddWithValue("@nome", cliente.Nome ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@cpf", (object?)cliente.Cpf ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@email", (object?)cliente.Email ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@senha", (object?)cliente.Senha ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@senha", cliente.Senha != null ? BCrypt.Net.BCrypt.HashPassword(cliente.Senha) : DBNull.Value);
                 cmd.Parameters.AddWithValue("@telefone", (object?)cliente.Telefone ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@gluten", cliente.RestricaoGluten);
                 cmd.Parameters.AddWithValue("@lactose", cliente.RestricaoLactose);
@@ -63,20 +63,45 @@ namespace BackEnd.Repository
             try
             {
                 using var cmd = _context.GetConexao().CreateCommand();
-                // Buscamos o cliente pelo email e senha, garantindo que ele esteja ativo
-                cmd.CommandText = "SELECT * FROM cliente WHERE email = @email AND senha = @senha AND ativo = true LIMIT 1";
-        
+                cmd.CommandText = "SELECT * FROM cliente WHERE email = @email AND ativo = true LIMIT 1";
                 cmd.Parameters.AddWithValue("@email", email);
-                cmd.Parameters.AddWithValue("@senha", senha);
 
                 using var dr = cmd.ExecuteReader();
         
                 if (dr.Read())
                 {
-                    return Map(dr); // Usa o seu método Map que já está pronto!
+                    var cliente = Map(dr);
+                    if (cliente.Senha == null) return null;
+                    
+                    string hashNoBanco = cliente.Senha;
+                    bool isBcrypt = hashNoBanco.StartsWith("$2a$") || hashNoBanco.StartsWith("$2b$") || hashNoBanco.StartsWith("$2y$");
+                    
+                    if (isBcrypt)
+                    {
+                        if (BCrypt.Net.BCrypt.Verify(senha, hashNoBanco))
+                        {
+                            return cliente;
+                        }
+                    }
+                    else
+                    {
+                        if (hashNoBanco == senha)
+                        {
+                            dr.Close();
+                            using var cmdUpdate = _context.GetConexao().CreateCommand();
+                            cmdUpdate.CommandText = "UPDATE cliente SET senha = @novaSenha WHERE id = @id";
+                            string newHash = BCrypt.Net.BCrypt.HashPassword(senha);
+                            cmdUpdate.Parameters.AddWithValue("@novaSenha", newHash);
+                            cmdUpdate.Parameters.AddWithValue("@id", cliente.Id);
+                            cmdUpdate.ExecuteNonQuery();
+                            
+                            cliente.Senha = newHash;
+                            return cliente;
+                        }
+                    }
                 }
         
-                return null; // Não achou ninguém
+                return null;
             }
             catch (Exception)
             {
@@ -130,8 +155,21 @@ namespace BackEnd.Repository
 
         public bool Excluir(int id)
         {
+            using var cmdCheck = _context.GetConexao().CreateCommand();
+            cmdCheck.CommandText = "SELECT COUNT(*) FROM encomenda WHERE cliente_id = @id";
+            cmdCheck.Parameters.AddWithValue("@id", id);
+            long encomendasVinculadas = (long)cmdCheck.ExecuteScalar();
+
             using var cmd = _context.GetConexao().CreateCommand();
-            cmd.CommandText = "UPDATE cliente SET ativo = false WHERE id = @id";
+            if (encomendasVinculadas > 0)
+            {
+                cmd.CommandText = "UPDATE cliente SET ativo = false WHERE id = @id";
+            }
+            else
+            {
+                cmd.CommandText = "DELETE FROM cliente WHERE id = @id";
+            }
+            
             cmd.Parameters.AddWithValue("@id", id);
             return cmd.ExecuteNonQuery() > 0;
         }

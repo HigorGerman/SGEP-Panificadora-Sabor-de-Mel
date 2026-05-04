@@ -9,6 +9,23 @@
 .btnEdit { color: #3182ce; background: none; border: none; margin-right: 10px; cursor: pointer; }
 .btnDelete { color: #e53e3e; background: none; border: none; cursor: pointer; }
 
+.searchBar { display: flex; align-items: center; background: white; border-radius: 8px; padding: 10px 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.searchIcon { color: #a0aec0; margin-right: 10px; }
+.searchBar input { border: none; outline: none; width: 100%; font-size: 1rem; color: #4a5568; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #edf2f7; transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+.cardInfo h3 { margin: 0 0 10px 0; color: #2d3748; }
+.cardInfo p { margin: 0 0 15px 0; color: #718096; font-size: 0.95rem; }
+.badgeAdmin { background: #5B0A1A; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+.badgeFunc { background: #edf2f7; color: #4a5568; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+.cardActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #edf2f7; padding-top: 15px; }
+.btnIconEdit { background: none; border: none; color: #3182ce; cursor: pointer; font-size: 1.2rem; padding: 5px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.btnIconEdit:hover { background: #ebf8ff; }
+.btnIconDelete { background: none; border: none; color: #e53e3e; cursor: pointer; font-size: 1.2rem; padding: 5px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.btnIconDelete:hover { background: #fff5f5; }
+
 .modalOverlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;

@@ -1,6 +1,6 @@
 "use client"
 import Link from 'next/link';
-import { FiHome, FiUsers, FiBox, FiList, FiUser } from 'react-icons/fi';
+import { FiHome, FiUsers, FiBox, FiList, FiUser, FiBookOpen, FiLayers, FiClock, FiShoppingBag } from 'react-icons/fi';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import styles from './sidebar.module.css';
@@ -20,13 +20,17 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   const navItems = [
     { name: 'Tela Inicial', path: '/', icon: <FiHome /> },
+    { name: 'Catálogo', path: '/catalogo', icon: <FiShoppingBag /> },
     { name: 'Nova Encomenda', path: '/nova-encomenda', icon: <FiBox /> },
     { name: 'Minhas Encomendas', path: '/minhas-encomendas', icon: <FiList /> },
   ];
 
   const adminItems = [
+    { name: 'Produção', path: '/producao', icon: <FiClock /> },
     { name: 'Clientes', path: '/clientes', icon: <FiUsers /> },
+    { name: 'Categorias', path: '/categorias', icon: <FiLayers /> },
     { name: 'Produtos', path: '/produtos', icon: <FiBox /> },
+    { name: 'Livro de Receitas', path: '/receitas', icon: <FiBookOpen /> },
     { name: 'Usuários', path: '/usuarios', icon: <FiUser /> },
   ];
 

@@ -1,0 +1,357 @@
+.container {
+  padding: 40px;
+  background-color: #FDFCF5; /* off-white */
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 40px;
+}
+
+.header h1 {
+  color: #5B0A1A;
+  font-size: 2.5rem;
+  margin-bottom: 5px;
+}
+
+.header p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.searchBar { display: flex; align-items: center; background: white; border-radius: 8px; padding: 10px 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px; }
+.searchIcon { color: #a0aec0; margin-right: 10px; }
+.searchBar input { border: none; outline: none; width: 100%; font-size: 1rem; color: #4a5568; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.cardImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background-color: #f0f0f0;
+}
+
+.cardContent {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.cardYield {
+  font-size: 0.95rem;
+  color: #718096;
+}
+
+/* Modal Sidebar */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modalSidebar {
+  background: white;
+  width: 500px;
+  max-width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 40px;
+  box-shadow: -5px 0 30px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.modalTitle {
+  font-size: 2rem;
+  color: #5B0A1A;
+  margin-bottom: 8px;
+}
+
+.btnClose {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #a0aec0;
+  transition: color 0.2s;
+  line-height: 1;
+}
+
+.btnClose:hover {
+  color: #e53e3e;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  color: #2d3748;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #edf2f7;
+  padding-bottom: 8px;
+}
+
+.ingredientsList {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.ingredientsList li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 8px;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+.ingredientsList li::before {
+  content: '•';
+  color: #5B0A1A;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.prepMode {
+  color: #4a5568;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.btnEdit {
+  margin-top: auto; /* Pushes button to bottom */
+  padding: 15px;
+  background-color: #edf2f7;
+  color: #4a5568;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.btnEdit:hover {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.inputField, .textareaField {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  margin-bottom: 10px;
+  background-color: #fcfcfc;
+}
+
+.inputField:focus, .textareaField:focus {
+  outline: none;
+  border-color: #5B0A1A;
+  box-shadow: 0 0 0 2px rgba(91, 10, 26, 0.1);
+}
+
+.textareaField {
+  resize: vertical;
+}
+
+.btnSave {
+  flex: 1;
+  padding: 15px;
+  background-color: #5B0A1A;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.btnSave:hover {
+  background-color: #4a0815;
+}
+
+.btnCancel {
+  flex: 1;
+  padding: 15px;
+  background-color: #e2e8f0;
+  color: #4a5568;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.btnCancel:hover {
+  background-color: #cbd5e1;
+}
+
+.btnPrint {
+  flex: 1;
+  padding: 15px;
+  background-color: #f8fafc;
+  color: #334155;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btnPrint:hover {
+  background-color: #e2e8f0;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 15px;
+  margin-top: 35px;
+}
+
+.cardCategory {
+  font-size: 1rem;
+  color: #5B0A1A;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+/* Regras de Impressão (Print) */
+@media print {
+  /* Ocultar elementos da tela principal para focar só no modal */
+  .header, .grid {
+    display: none !important;
+  }
+  
+  .container {
+    padding: 0 !important;
+    background-color: white !important;
+  }
+
+  /* Expandir o modal para ocupar a página inteira impressa */
+  .modalOverlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .modalSidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 20px !important;
+    animation: none !important;
+  }
+
+  /* Esconder botões na impressão */
+  .btnClose, .btnEdit, .btnPrint, .actionButtons, .btnSave, .btnCancel {
+    display: none !important;
+  }
+
+  /* Ajustes visuais de tipografia no PDF */
+  .modalTitle {
+    font-size: 2.5rem !important;
+    color: #5B0A1A !important;
+    border-bottom: 2px solid #5B0A1A !important;
+    padding-bottom: 15px !important;
+    margin-bottom: 15px !important;
+  }
+
+  .printMeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+  }
+
+  .cardCategory, .cardYield {
+    font-size: 1.2rem !important;
+    color: #333 !important;
+    margin: 0 !important;
+  }
+
+  .sectionTitle {
+    font-size: 1.5rem !important;
+    color: #5B0A1A !important;
+    margin-top: 30px !important;
+    margin-bottom: 15px !important;
+    border-bottom: 1px solid #eee !important;
+  }
+
+  .ingredientsList li {
+    font-size: 1.2rem !important;
+    color: #000 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .prepMode {
+    font-size: 1.2rem !important;
+    color: #000 !important;
+  }
+}

@@ -10,6 +10,7 @@ interface Produto {
   nome: string;
   precoUnitario: number;
   imagemUrl?: string;
+  descricao?: string;
 }
 
 interface CartItem {
@@ -34,6 +35,7 @@ export default function CatalogoPage() {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
 
   // Checkout form state
   const [dataEntrega, setDataEntrega] = useState('');
@@ -211,9 +213,20 @@ export default function CatalogoPage() {
               
               <div className={styles.cardCenter}>
                 <div className={styles.productName}>{produto.nome}</div>
+                {produto.descricao && (
+                  <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '8px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {produto.descricao}
+                  </div>
+                )}
                 <div className={styles.productPrice}>
                   R$ {produto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
+                <button 
+                  style={{ background: 'transparent', border: 'none', color: '#5B0A1A', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.8rem', padding: 0, marginTop: '5px' }}
+                  onClick={() => setSelectedProduto(produto)}
+                >
+                  Ver Mais
+                </button>
               </div>
 
               <div className={styles.cardRight}>
@@ -373,6 +386,48 @@ export default function CatalogoPage() {
                 {loading ? 'Confirmando...' : 'Confirmar Encomenda'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE DETALHES DO PRODUTO (VER MAIS) */}
+      {selectedProduto && (
+        <div className={styles.modalOverlay} onClick={() => setSelectedProduto(null)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '0', overflow: 'hidden', position: 'relative' }}>
+            <img 
+              src={selectedProduto.imagemUrl || "https://placehold.co/500x300?text=SGEP"} 
+              alt={selectedProduto.nome} 
+              style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block' }}
+              onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/500x300?text=SGEP" }}
+            />
+            <div style={{ padding: '25px' }}>
+              <h2 className={styles.modalTitle} style={{ marginBottom: '10px', fontSize: '1.8rem' }}>{selectedProduto.nome}</h2>
+              <p style={{ fontSize: '1.6rem', color: '#5B0A1A', fontWeight: 'bold', marginBottom: '15px' }}>
+                R$ {selectedProduto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+              <div style={{ color: '#4a5568', lineHeight: '1.6', fontSize: '1.1rem', marginBottom: '30px', whiteSpace: 'pre-wrap' }}>
+                {selectedProduto.descricao || 'Este produto não possui uma descrição detalhada ainda.'}
+              </div>
+              <button 
+                className={styles.btnPrimary} 
+                style={{ width: '100%', padding: '15px', fontSize: '1.1rem' }}
+                onClick={() => {
+                  addToCart(selectedProduto);
+                  setSelectedProduto(null);
+                  setIsSummaryOpen(true);
+                }}
+              >
+                Adicionar ao Carrinho
+              </button>
+            </div>
+            <button 
+              onClick={() => setSelectedProduto(null)}
+              style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '35px', height: '35px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', transition: 'background 0.2s' }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.8)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.5)'}
+            >
+              &times;
+            </button>
           </div>
         </div>
       )}

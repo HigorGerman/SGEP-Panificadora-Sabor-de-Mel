@@ -14,28 +14,28 @@
   box-shadow: 0 10px 25px rgba(0,0,0,0.1);
   width: 100%;
   max-width: 400px;
-  border-top: 8px solid #5B0A1A; /* Bordô no topo do card */
 }
 
 .header {
   text-align: center;
   margin-bottom: 30px;
-  background-color: #5B0A1A;
-  padding: 20px;
-  border-radius: 8px 8px 0 0;
+}
+
+.logoImg {
+  margin-bottom: 15px;
 }
 
 .title {
-  color: white;
-  font-size: 32px;
+  color: #5B0A1A;
+  font-size: 28px;
   font-weight: 900;
   margin: 0;
 }
 
 .subtitle {
-  color: #ffffff;
+  color: #718096;
   font-size: 14px;
-  margin: 0;
+  margin: 5px 0 0 0;
 }
 
 .form {
@@ -53,20 +53,54 @@
 .inputGroup label {
   font-size: 14px;
   font-weight: 600;
-  color: #444;
+  color: #4a5568;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 12px;
+  color: #a0aec0;
 }
 
 .inputGroup input {
-  padding: 12px;
-  border: 1px solid #ddd;
+  padding: 12px 12px 12px 40px; /* Espaço para o ícone */
+  border: 1px solid #cbd5e0;
   border-radius: 8px;
   font-size: 16px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .inputGroup input:focus {
   border-color: #5B0A1A;
+  box-shadow: 0 0 0 2px rgba(91, 10, 26, 0.1);
+}
+
+.eyeIcon {
+  position: absolute;
+  right: 12px;
+  color: #a0aec0;
+  cursor: pointer;
+}
+
+.toastError {
+  color: #c53030;
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 5px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .loginBtn {

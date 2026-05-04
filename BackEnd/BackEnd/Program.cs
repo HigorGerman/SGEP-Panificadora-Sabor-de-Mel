@@ -25,12 +25,15 @@ builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<ClienteRepository>();
 builder.Services.AddScoped<ProdutoRepository>();
 builder.Services.AddScoped<EncomendaRepository>();
+builder.Services.AddScoped<CategoriaRepository>();
+builder.Services.AddScoped<ReceitaRepository>();
 
 // --- Injeção de Dependência (Services) ---
 builder.Services.AddScoped<UsuarioServices>();
 builder.Services.AddScoped<ClienteServices>();
 builder.Services.AddScoped<ProdutoServices>();
 builder.Services.AddScoped<EncomendaServices>();
+builder.Services.AddScoped<CategoriaService>();
 
 var app = builder.Build();
 

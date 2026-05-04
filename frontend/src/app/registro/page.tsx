@@ -2,11 +2,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FiUser, FiCreditCard, FiMail, FiPhone, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import styles from './registro.module.css';
 import api from '@/services/api';
 
 export default function RegistroPage() {
   const [formData, setFormData] = useState({ nome: '', cpf: '', email: '', telefone: '', senha: '', confirmar: '', restricaoGluten: false, restricaoLactose: false, restricaoAcucar: false });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -70,35 +73,64 @@ export default function RegistroPage() {
       <div className={styles.registroCard}>
         <div className={styles.header}>
           <h2 className={styles.title}>Criar Conta</h2>
-          <p className={styles.subtitle}>SGEP Padaria Sabor</p>
+          <p className={styles.subtitle}>SGEP Padaria Sabor de Mel</p>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          {error && <div style={{ color: '#b00020', background: '#fff0f0', border: '1px solid #f5c2c7', borderRadius: 8, padding: 8, marginBottom: 10, textAlign: 'center' }}>{error}</div>}
-          {success && <div style={{ color: '#155724', background: '#d4edda', border: '1px solid #c3e6cb', borderRadius: 8, padding: 8, marginBottom: 10, textAlign: 'center' }}>{success}</div>}
+          {error && <div className={styles.toastError}>{error}</div>}
+          {success && <div className={styles.toastSuccess}>{success}</div>}
+          
           <div className={styles.inputGroup}>
             <label>Nome Completo</label>
-            <input type="text" required onChange={e => setFormData({ ...formData, nome: e.target.value })} />
+            <div className={styles.inputWrapper}>
+              <FiUser className={styles.inputIcon} size={18} />
+              <input type="text" placeholder="Digite seu nome completo" required onChange={e => setFormData({ ...formData, nome: e.target.value })} />
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label>CPF</label>
-            <input type="text" maxLength={14} required value={formData.cpf} onChange={e => setFormData({ ...formData, cpf: formatCpf(e.target.value) })} />
+            <div className={styles.inputWrapper}>
+              <FiCreditCard className={styles.inputIcon} size={18} />
+              <input type="text" placeholder="000.000.000-00" maxLength={14} required value={formData.cpf} onChange={e => setFormData({ ...formData, cpf: formatCpf(e.target.value) })} />
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label>E-mail</label>
-            <input type="email" required onChange={e => setFormData({ ...formData, email: e.target.value })} />
+            <div className={styles.inputWrapper}>
+              <FiMail className={styles.inputIcon} size={18} />
+              <input type="email" placeholder="seuemail@exemplo.com" required onChange={e => setFormData({ ...formData, email: e.target.value })} />
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label>Telefone</label>
-            <input type="text" maxLength={15} required value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} />
+            <div className={styles.inputWrapper}>
+              <FiPhone className={styles.inputIcon} size={18} />
+              <input type="text" placeholder="(00) 00000-0000" maxLength={15} required value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: formatPhone(e.target.value) })} />
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label>Senha</label>
-            <input type="password" required onChange={e => setFormData({ ...formData, senha: e.target.value })} />
+            <div className={styles.inputWrapper}>
+              <FiLock className={styles.inputIcon} size={18} />
+              <input type={showPassword ? "text" : "password"} placeholder="Crie uma senha forte" required onChange={e => setFormData({ ...formData, senha: e.target.value })} />
+              {showPassword ? (
+                <FiEyeOff className={styles.eyeIcon} size={18} onClick={() => setShowPassword(false)} />
+              ) : (
+                <FiEye className={styles.eyeIcon} size={18} onClick={() => setShowPassword(true)} />
+              )}
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label>Confirmar Senha</label>
-            <input type="password" required onChange={e => setFormData({ ...formData, confirmar: e.target.value })} />
+            <div className={styles.inputWrapper}>
+              <FiLock className={styles.inputIcon} size={18} />
+              <input type={showConfirmPassword ? "text" : "password"} placeholder="Repita a senha" required onChange={e => setFormData({ ...formData, confirmar: e.target.value })} />
+              {showConfirmPassword ? (
+                <FiEyeOff className={styles.eyeIcon} size={18} onClick={() => setShowConfirmPassword(false)} />
+              ) : (
+                <FiEye className={styles.eyeIcon} size={18} onClick={() => setShowConfirmPassword(true)} />
+              )}
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label>Restrições Alimentares</label>

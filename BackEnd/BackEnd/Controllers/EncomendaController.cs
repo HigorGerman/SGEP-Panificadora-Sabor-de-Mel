@@ -63,7 +63,7 @@ namespace BackEnd.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public IActionResult ObterPorId(int id)
         {
             try
@@ -81,7 +81,7 @@ namespace BackEnd.Controllers
             }
         }
         
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public IActionResult Atualizar(int id, [FromBody] EncomendaCreateDto dto)
         {
             try
@@ -118,7 +118,7 @@ namespace BackEnd.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public IActionResult Deletar(int id)
         {
             try
@@ -128,6 +128,39 @@ namespace BackEnd.Controllers
                     return Ok(new { message = "Encomenda excluída com sucesso!" });
                 
                 return BadRequest(new { message = "Erro ao excluir encomenda." });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { message = e.Message });
+            }
+        }
+
+        [HttpGet("detalhes")]
+        public IActionResult ListarComDetalhes()
+        {
+            try
+            {
+                var encomendas = _encomendaServices.ListarComDetalhes();
+                return Ok(encomendas);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new { message = e.Message });
+            }
+        }
+
+        public class StatusUpdateDto { public int Status { get; set; } }
+
+        [HttpPatch("{id:int}/status")]
+        public IActionResult AtualizarStatus(int id, [FromBody] StatusUpdateDto dto)
+        {
+            try
+            {
+                var sucesso = _encomendaServices.AtualizarStatus(id, (Encomenda.StatusEnum)dto.Status);
+                if (sucesso) return Ok(new { message = "Status atualizado com sucesso!" });
+                return BadRequest(new { message = "Erro ao atualizar status." });
             }
             catch (Exception e)
             {

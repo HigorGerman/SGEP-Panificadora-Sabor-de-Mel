@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { FiSearch } from 'react-icons/fi';
 import api from '@/services/api';
 import styles from './nova-encomenda.module.css';
 
@@ -10,6 +10,8 @@ interface Produto {
   nome: string;
   precoUnitario: number;
   imagemUrl?: string;
+  descricao?: string;
+  categoriaId?: number;
 }
 
 interface CartItem {
@@ -22,6 +24,8 @@ interface CartItem {
 export default function NovaEncomenda() {
   const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [categorias, setCategorias] = useState<{id: number, descricao: string}[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [quantidades, setQuantidades] = useState<Record<number, number>>({});
   const [cart, setCart] = useState<CartItem[]>([]);
   
@@ -35,21 +39,27 @@ export default function NovaEncomenda() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchProdutos();
+    fetchData();
   }, []);
 
-  const fetchProdutos = async () => {
+  const fetchData = async () => {
     try {
-      const res = await api.get('/Produtos');
-      setProdutos(res.data);
+      const [resProd, resCat] = await Promise.all([
+        api.get('/Produtos'),
+        api.get('/Categorias')
+      ]);
+      
+      setProdutos(resProd.data);
+      setCategorias(resCat.data);
+      
       // Initialize quantities to 1
       const initialQuantities: Record<number, number> = {};
-      res.data.forEach((p: Produto) => {
+      resProd.data.forEach((p: Produto) => {
         initialQuantities[p.id] = 1;
       });
       setQuantidades(initialQuantities);
     } catch (error) {
-      console.error("Erro ao buscar produtos:", error);
+      console.error("Erro ao buscar dados:", error);
     }
   };
 
@@ -169,41 +179,81 @@ export default function NovaEncomenda() {
     setDataEntrega(val);
   };
 
+  const getCategoriaDescricao = (id?: number) => {
+    if (!id) return '';
+    const cat = categorias.find(c => c.id === id);
+    return cat ? cat.descricao : '';
+  };
+
+  const filteredProdutos = produtos.filter(p => {
+    const term = searchTerm.toLowerCase();
+    const nomeMatch = p.nome.toLowerCase().includes(term);
+    const descMatch = p.descricao && p.descricao.toLowerCase().includes(term);
+    const catMatch = getCategoriaDescricao(p.categoriaId).toLowerCase().includes(term);
+    
+    return nomeMatch || descMatch || catMatch;
+  });
+
   return (
     <div className={styles.container}>
       {/* Vitrine de Produtos */}
-      <div className={styles.produtosGrid}>
-        {produtos.map(produto => (
-          <div key={produto.id} className={styles.card}>
-            {/* Foto placeholder se não houver imagem */}
-            <img 
-              src={produto.imagemUrl || "https://placehold.co/400x300?text=Sem+Foto"} 
-              alt={produto.nome} 
-              className={styles.cardImage}
-              onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300?text=Sem+Foto" }}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className={styles.searchContainer}>
+          <div className={styles.searchBar}>
+            <FiSearch className={styles.searchIcon} size={20} />
+            <input 
+              type="text" 
+              placeholder="Buscar por nome, categoria ou descrição..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
             />
-            <div className={styles.cardTitle}>{produto.nome}</div>
-            <div className={styles.cardPrice}>
-              R$ {produto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            
-            <div className={styles.cardActions}>
-              <input 
-                type="number" 
-                min="1" 
-                className={styles.quantityInput}
-                value={quantidades[produto.id] || 1}
-                onChange={(e) => handleQuantityChange(produto.id, e.target.value)}
-              />
-              <button 
-                className={styles.btnAdd}
-                onClick={() => addToCart(produto)}
-              >
-                Adicionar
-              </button>
-            </div>
           </div>
-        ))}
+        </div>
+        
+        {filteredProdutos.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#a0aec0', padding: '40px 0', fontSize: '1.1rem' }}>
+            Nenhum produto encontrado com esse nome.
+          </div>
+        ) : (
+          <div className={styles.produtosGrid}>
+            {filteredProdutos.map(produto => (
+              <div key={produto.id} className={styles.card}>
+                {/* Foto placeholder se não houver imagem */}
+                <img 
+                  src={produto.imagemUrl || "https://placehold.co/400x300?text=Sem+Foto"} 
+                  alt={produto.nome} 
+                  className={styles.cardImage}
+                  onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300?text=Sem+Foto" }}
+                />
+                <div className={styles.cardTitle}>{produto.nome}</div>
+                {produto.descricao && (
+                  <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px', textAlign: 'center', padding: '0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {produto.descricao}
+                  </div>
+                )}
+                <div className={styles.cardPrice}>
+                  R$ {produto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+                
+                <div className={styles.cardActions}>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    className={styles.quantityInput}
+                    value={quantidades[produto.id] || 1}
+                    onChange={(e) => handleQuantityChange(produto.id, e.target.value)}
+                  />
+                  <button 
+                    className={styles.btnAdd}
+                    onClick={() => addToCart(produto)}
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Carrinho Lateral */}

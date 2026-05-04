@@ -8,4 +8,8 @@ public class ProdutoResponse
     public int CategoriaId { get; set; }
     public string? NomeCategoria { get; set; } 
     public string? ImagemUrl { get; set; }
+    public string? Descricao { get; set; }
+    public string? Ingredientes { get; set; }
+    public string? ModoPreparo { get; set; }
+    public string? Rendimento { get; set; }
 }

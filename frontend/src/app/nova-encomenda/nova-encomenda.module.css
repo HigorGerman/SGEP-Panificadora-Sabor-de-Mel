@@ -11,6 +11,41 @@
   }
 }
 
+.searchContainer {
+  margin-bottom: 25px;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 50px;
+  padding: 12px 20px;
+  width: 100%;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.searchBar:focus-within {
+  border-color: #5B0A1A;
+  box-shadow: 0 0 0 3px rgba(91, 10, 26, 0.1);
+}
+
+.searchIcon {
+  color: #a0aec0;
+  margin-right: 12px;
+}
+
+.searchBar input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 1rem;
+  color: #4a5568;
+  background: transparent;
+}
+
 .produtosGrid {
   flex: 1;
   display: grid;

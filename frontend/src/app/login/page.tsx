@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import styles from './login.module.css';
 import api from '@/services/api';
 
@@ -9,6 +10,7 @@ import api from '@/services/api';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -45,31 +47,43 @@ export default function LoginPage() {
       <div className={styles.loginCard}>
         <div className={styles.header}>
           <h1 className={styles.title}>SGEP</h1>
-          <p className={styles.subtitle}>Padaria Sabor - Login</p>
+          <p className={styles.subtitle}>Padaria Sabor de Mel - Login</p>
         </div>
 
         <form onSubmit={handleLogin} className={styles.form}>
-          {error && <div style={{ color: '#b00020', background: '#fff0f0', border: '1px solid #f5c2c7', borderRadius: 8, padding: 8, marginBottom: 10, textAlign: 'center' }}>{error}</div>}
+          {error && <div className={styles.toastError}>{error}</div>}
+          
           <div className={styles.inputGroup}>
             <label>E-mail</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Digite seu e-mail"
-              required
-            />
+            <div className={styles.inputWrapper}>
+              <FiMail className={styles.inputIcon} size={18} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Digite seu e-mail"
+                required
+              />
+            </div>
           </div>
 
           <div className={styles.inputGroup}>
             <label>Senha</label>
-            <input
-              type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              placeholder="Digite sua senha"
-              required
-            />
+            <div className={styles.inputWrapper}>
+              <FiLock className={styles.inputIcon} size={18} />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="Digite sua senha"
+                required
+              />
+              {showPassword ? (
+                <FiEyeOff className={styles.eyeIcon} size={18} onClick={() => setShowPassword(false)} />
+              ) : (
+                <FiEye className={styles.eyeIcon} size={18} onClick={() => setShowPassword(true)} />
+              )}
+            </div>
           </div>
 
           <button type="submit" className={styles.loginBtn} disabled={loading}>

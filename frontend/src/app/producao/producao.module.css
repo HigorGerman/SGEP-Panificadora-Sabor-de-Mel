@@ -1,0 +1,176 @@
+.container {
+  padding: 40px;
+  background-color: #f4f7f6;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.title {
+  color: #5B0A1A;
+  font-size: 2.5rem;
+}
+
+.filters {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.filterBtn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #555;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterBtnActive {
+  background: #5B0A1A;
+  color: white;
+  border-color: #5B0A1A;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardHeader {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.3rem;
+  color: white;
+}
+
+/* Status Colors */
+.status0 { background-color: #eab308; } /* Pendente - Amarelo */
+.status1 { background-color: #3b82f6; } /* Em Andamento - Azul */
+.status2 { background-color: #22c55e; } /* Pronto - Verde */
+
+.cardBody {
+  padding: 25px 20px;
+  flex: 1;
+}
+
+.clientName {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: #ccc;
+  text-underline-offset: 4px;
+}
+
+.clientName:hover {
+  color: #5B0A1A;
+  text-decoration-color: #5B0A1A;
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.item {
+  font-size: 1.2rem;
+  color: #444;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.item::before {
+  content: '✓';
+  color: #5B0A1A;
+  margin-right: 12px;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.cardFooter {
+  padding: 20px;
+  background: #f9f9f9;
+  border-top: 1px solid #f0f0f0;
+}
+
+.actionBtn {
+  width: 100%;
+  padding: 18px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  color: white;
+}
+
+.actionBtn:hover {
+  opacity: 0.9;
+}
+
+.btnStart { background-color: #3b82f6; }
+.btnFinish { background-color: #22c55e; }
+.btnDeliver { background-color: #5B0A1A; }
+
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal h2 { margin-bottom: 20px; color: #5B0A1A; font-size: 1.8rem; }
+.modal p { font-size: 1.2rem; color: #333; margin-bottom: 10px; }
+
+.btnClose {
+  padding: 12px 30px;
+  background: #edf2f7;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-top: 20px;
+}

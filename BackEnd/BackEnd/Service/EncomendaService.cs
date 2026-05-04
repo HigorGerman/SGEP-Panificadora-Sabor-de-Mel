@@ -68,5 +68,15 @@ namespace BackEnd.Services
         {
             return _repository.Excluir(id);
         }
+
+        public List<Encomenda> ListarComDetalhes()
+        {
+            return _repository.ListarComDetalhes();
+        }
+
+        public bool AtualizarStatus(int id, Encomenda.StatusEnum status)
+        {
+            return _repository.AtualizarStatus(id, status);
+        }
     }
 }

@@ -6,7 +6,8 @@ public class Encomenda {
         Pendente = 0,
         EmAndamento = 1,
         Concluida = 2,
-        Cancelada = 3
+        Cancelada = 3,
+        Entregue = 4
     }
 
     public int Id { get; set; }
@@ -16,5 +17,7 @@ public class Encomenda {
     public StatusEnum Status { get; set; }
     public decimal ValorTotal { get; set; }
     public string? Observacao { get; set; }
+    public string? ClienteNome { get; set; }
+    public string? ClienteTelefone { get; set; }
     public List<ItemEncomenda> Itens { get; set; } = new List<ItemEncomenda>();
 }

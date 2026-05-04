@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiSearch, FiEdit, FiTrash2 } from 'react-icons/fi';
 import api from '@/services/api';
 import styles from './usuarios.module.css';
 
@@ -16,6 +17,7 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Estados para o Modal e Formulário
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,6 +111,11 @@ export default function UsuariosPage() {
   // Segurança double-check na tela (não renderiza se não for admin)
   if (userRole !== '0') return null;
 
+  const filteredUsuarios = usuarios.filter(u => 
+    u.usuarioNome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -122,35 +129,41 @@ export default function UsuariosPage() {
         </button>
       </div>
 
-      {/* Tabela de Usuários */}
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>E-mail</th>
-            <th>Perfil</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {usuarios.length === 0 ? (
-            <tr><td colSpan={4} style={{textAlign: 'center'}}>Nenhum usuário cadastrado.</td></tr>
-          ) : (
-            usuarios.map((u) => (
-              <tr key={u.id}>
-                <td>{u.usuarioNome}</td>
-                <td>{u.email}</td>
-                <td>{u.perfil === 0 ? 'Admin' : 'Funcionário'}</td>
-                <td>
-                   {/* Espaço para botões Alterar / Excluir no futuro */}
-                   <button className={styles.btnEdit} style={{marginRight: '8px', backgroundColor: '#e0a800', color: 'white', padding: '5px 10px', border: 'none', borderRadius: '4px', cursor: 'pointer'}} onClick={() => handleEditar(u)}>Alterar</button>
-                   <button className={styles.btnDelete} onClick={() => handleExcluir(u.id)}>Excluir</button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <div className={styles.searchBar}>
+        <FiSearch className={styles.searchIcon} />
+        <input 
+          type="text" 
+          placeholder="Buscar usuário por nome ou email..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className={styles.grid}>
+        {filteredUsuarios.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#718096', width: '100%', gridColumn: '1 / -1' }}>Nenhum usuário encontrado.</p>
+        ) : (
+          filteredUsuarios.map((u) => (
+            <div key={u.id} className={styles.card}>
+              <div className={styles.cardInfo}>
+                <h3>{u.usuarioNome}</h3>
+                <p>{u.email}</p>
+                <span className={u.perfil === 0 ? styles.badgeAdmin : styles.badgeFunc}>
+                  {u.perfil === 0 ? 'Admin' : 'Funcionário'}
+                </span>
+              </div>
+              <div className={styles.cardActions}>
+                <button className={styles.btnIconEdit} onClick={() => handleEditar(u)} title="Alterar">
+                  <FiEdit />
+                </button>
+                <button className={styles.btnIconDelete} onClick={() => handleExcluir(u.id)} title="Excluir">
+                  <FiTrash2 />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       {/* Modal de Cadastro */}
       {isModalOpen && (
