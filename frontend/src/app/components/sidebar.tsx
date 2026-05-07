@@ -1,6 +1,6 @@
 "use client"
 import Link from 'next/link';
-import { FiHome, FiUsers, FiBox, FiList, FiUser, FiBookOpen, FiLayers, FiClock, FiShoppingBag } from 'react-icons/fi';
+import { FiHome, FiUsers, FiBox, FiList, FiUser, FiBookOpen, FiLayers, FiClock, FiShoppingBag, FiPackage, FiArchive } from 'react-icons/fi';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import styles from './sidebar.module.css';
@@ -27,6 +27,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   const adminItems = [
     { name: 'Produção', path: '/producao', icon: <FiClock /> },
+    { name: 'Retirada (Balcão)', path: '/retirada', icon: <FiPackage /> },
+    { name: 'Histórico', path: '/historico', icon: <FiArchive /> },
     { name: 'Clientes', path: '/clientes', icon: <FiUsers /> },
     { name: 'Categorias', path: '/categorias', icon: <FiLayers /> },
     { name: 'Produtos', path: '/produtos', icon: <FiBox /> },

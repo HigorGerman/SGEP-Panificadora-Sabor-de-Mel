@@ -168,5 +168,23 @@ namespace BackEnd.Controllers
                 return StatusCode(500, new { message = e.Message });
             }
         }
+
+        public class EntregaDto { public int? UsuarioId { get; set; } }
+
+        [HttpPost("{id:int}/entrega")]
+        public IActionResult RegistrarEntrega(int id, [FromBody] EntregaDto dto)
+        {
+            try
+            {
+                var sucesso = _encomendaServices.RegistrarEntrega(id, dto?.UsuarioId);
+                if (sucesso) return Ok(new { message = "Entrega registrada com sucesso!" });
+                return BadRequest(new { message = "Erro ao registrar entrega." });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return BadRequest(new { message = e.Message });
+            }
+        }
     }
 }

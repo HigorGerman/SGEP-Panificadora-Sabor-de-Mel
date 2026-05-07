@@ -1,0 +1,287 @@
+.container {
+  padding: 40px;
+  background-color: #FDFCF5;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 30px;
+}
+
+.title {
+  color: #5B0A1A;
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin-top: 8px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 25px;
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+  color: #999;
+  font-size: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #f0f0f0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+}
+
+.cardHeader {
+  padding: 20px 25px;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.clienteNome {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #5B0A1A;
+  margin-bottom: 8px;
+}
+
+.horarioCombinado {
+  display: inline-flex;
+  align-items: center;
+  background-color: #fff0f2;
+  color: #5B0A1A;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: bold;
+}
+
+.cardBody {
+  padding: 25px;
+  flex: 1;
+  background-color: #fafafa;
+}
+
+.itemsTitle {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 15px 0;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+  color: #444;
+}
+
+.itemQtd {
+  font-weight: bold;
+  color: #5B0A1A;
+  margin-right: 10px;
+  min-width: 25px;
+}
+
+.itemName {
+  flex: 1;
+}
+
+.observacao {
+  background: #fff8dc;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #eab308;
+  color: #856404;
+  font-size: 0.95rem;
+  margin-top: 15px;
+}
+
+.cardFooter {
+  padding: 20px 25px;
+  background: white;
+  border-top: 1px solid #f0f0f0;
+}
+
+.btnDeliver {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.15rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background-color: #5B0A1A;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btnDeliver:hover {
+  background-color: #7a0d22;
+}
+
+.btnDeliver:active {
+  transform: scale(0.98);
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 35px;
+  border-radius: 20px;
+  width: 450px;
+  max-width: 90%;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.modalTitle { 
+  margin: 0 0 5px 0; 
+  color: #5B0A1A; 
+  font-size: 1.8rem; 
+}
+
+.modalSubtitle { 
+  font-size: 1.3rem; 
+  font-weight: bold; 
+  color: #333; 
+  margin: 0 0 25px 0; 
+}
+
+.modalSummaryBox {
+  background-color: #f8f9fa;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 25px;
+}
+
+.modalItemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modalItemList li {
+  margin-bottom: 12px;
+  font-size: 1.15rem;
+  color: #495057;
+  border-bottom: 1px dashed #dee2e6;
+  padding-bottom: 12px;
+}
+
+.modalItemList li:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.modalTotalBox {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 2px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #212529;
+}
+
+.modalTotalValue {
+  color: #5B0A1A;
+  font-size: 1.6rem;
+}
+
+.modalActions {
+  display: flex;
+  gap: 15px;
+}
+
+.btnVoltar {
+  flex: 1;
+  padding: 16px;
+  background: #e9ecef;
+  color: #495057;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: background-color 0.2s;
+}
+
+.btnVoltar:hover {
+  background: #dee2e6;
+}
+
+.btnConfirmar {
+  flex: 1;
+  padding: 16px;
+  background-color: #5B0A1A;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.btnConfirmar:hover {
+  background-color: #7a0d22;
+}

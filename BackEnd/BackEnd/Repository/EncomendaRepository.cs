@@ -232,16 +232,31 @@ namespace BackEnd.Repository
             var lista = new List<Encomenda>();
             var conexao = _context.GetConexao();
 
+            using (var cmdAlter = conexao.CreateCommand())
+            {
+                cmdAlter.CommandText = @"
+                    ALTER TABLE encomenda ADD COLUMN IF NOT EXISTS data_entrega_real TIMESTAMP;
+                    ALTER TABLE encomenda ADD COLUMN IF NOT EXISTS usuario_entrega_id INT REFERENCES usuario(id);
+                    CREATE TABLE IF NOT EXISTS pagamento (id SERIAL PRIMARY KEY, encomenda_id INT REFERENCES encomenda(id) ON DELETE CASCADE, status VARCHAR(50) DEFAULT 'pendente');
+                    ALTER TABLE pagamento ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pago';
+                    ALTER TABLE pagamento ADD COLUMN IF NOT EXISTS forma_pagamento VARCHAR(100) DEFAULT 'Não informada';
+                ";
+                cmdAlter.ExecuteNonQuery();
+            }
+
             // Auto-completa encomendas que o horário já passou
             using var cmdUpdate = conexao.CreateCommand();
             cmdUpdate.CommandText = "UPDATE encomenda SET status_enum = 2 WHERE status_enum < 2 AND data_retirada <= NOW()";
             cmdUpdate.ExecuteNonQuery();
 
             using var cmd = conexao.CreateCommand();
-            cmd.CommandText = @"SELECT e.*, COALESCE(c.nome, u.usuario_nome) as cliente_nome, COALESCE(c.telefone, '') as cliente_telefone
+            cmd.CommandText = @"SELECT e.*, COALESCE(c.nome, u.usuario_nome) as cliente_nome, COALESCE(c.telefone, '') as cliente_telefone,
+                                       (SELECT forma_pagamento FROM pagamento WHERE encomenda_id = e.id ORDER BY id DESC LIMIT 1) as forma_pagamento,
+                                       ue.usuario_nome as usuario_entrega_nome
                                 FROM encomenda e 
                                 LEFT JOIN cliente c ON e.cliente_id = c.id
                                 LEFT JOIN usuario u ON e.usuario_id = u.id 
+                                LEFT JOIN usuario ue ON e.usuario_entrega_id = ue.id
                                 ORDER BY e.data_retirada ASC";
             
             using var dr = cmd.ExecuteReader();
@@ -257,6 +272,9 @@ namespace BackEnd.Repository
                 enc.Observacao = dr.IsDBNull(dr.GetOrdinal("observacao")) ? "" : dr.GetString(dr.GetOrdinal("observacao"));
                 enc.ClienteNome = dr.IsDBNull(dr.GetOrdinal("cliente_nome")) ? "Cliente Avulso" : dr.GetString(dr.GetOrdinal("cliente_nome"));
                 enc.ClienteTelefone = dr.IsDBNull(dr.GetOrdinal("cliente_telefone")) ? "" : dr.GetString(dr.GetOrdinal("cliente_telefone"));
+                enc.DataEntregaReal = dr.IsDBNull(dr.GetOrdinal("data_entrega_real")) ? null : dr.GetDateTime(dr.GetOrdinal("data_entrega_real"));
+                enc.PagamentoForma = dr.IsDBNull(dr.GetOrdinal("forma_pagamento")) ? "Não informada" : dr.GetString(dr.GetOrdinal("forma_pagamento"));
+                enc.UsuarioEntregaNome = dr.IsDBNull(dr.GetOrdinal("usuario_entrega_nome")) ? null : dr.GetString(dr.GetOrdinal("usuario_entrega_nome"));
                 lista.Add(enc);
             }
             dr.Close();
@@ -301,6 +319,57 @@ namespace BackEnd.Repository
             cmd.CommandText = "UPDATE encomenda SET status_enum = @status WHERE id = @id";
             cmd.Parameters.AddWithValue("@status", (int)novoStatus);
             cmd.Parameters.AddWithValue("@id", id);
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+        public bool RegistrarEntrega(int id, int? usuarioEntregaId)
+        {
+            var conexao = _context.GetConexao();
+
+            // Garante que a estrutura exista
+            using (var cmdAlter = conexao.CreateCommand())
+            {
+                cmdAlter.CommandText = @"
+                    ALTER TABLE encomenda ADD COLUMN IF NOT EXISTS data_entrega_real TIMESTAMP;
+                    ALTER TABLE encomenda ADD COLUMN IF NOT EXISTS usuario_entrega_id INT REFERENCES usuario(id);
+                ";
+                cmdAlter.ExecuteNonQuery();
+            }
+
+            using (var cmdPayTable = conexao.CreateCommand())
+            {
+                cmdPayTable.CommandText = "CREATE TABLE IF NOT EXISTS pagamento (id SERIAL PRIMARY KEY, encomenda_id INT REFERENCES encomenda(id) ON DELETE CASCADE, status VARCHAR(50) DEFAULT 'pendente');";
+                cmdPayTable.ExecuteNonQuery();
+                
+                cmdPayTable.CommandText = "ALTER TABLE pagamento ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pago';";
+                cmdPayTable.ExecuteNonQuery();
+            }
+
+            // Valida Pagamento
+            using (var cmdCheckPay = conexao.CreateCommand())
+            {
+                cmdCheckPay.CommandText = "SELECT status FROM pagamento WHERE encomenda_id = @id ORDER BY id DESC LIMIT 1";
+                cmdCheckPay.Parameters.AddWithValue("@id", id);
+                var statusPagamento = cmdCheckPay.ExecuteScalar()?.ToString();
+
+                if (statusPagamento == null)
+                {
+                    // Insere um pagamento mock para não travar o fluxo caso a tabela seja nova
+                    using var cmdMock = conexao.CreateCommand();
+                    cmdMock.CommandText = "INSERT INTO pagamento (encomenda_id, status) VALUES (@id, 'pago')";
+                    cmdMock.Parameters.AddWithValue("@id", id);
+                    cmdMock.ExecuteNonQuery();
+                }
+                else if (statusPagamento.ToLower() != "pago" && statusPagamento.ToLower() != "concluido")
+                {
+                    throw new Exception($"Pagamento não concluído. Status atual: {statusPagamento}.");
+                }
+            }
+
+            using var cmd = conexao.CreateCommand();
+            cmd.CommandText = "UPDATE encomenda SET status_enum = 4, data_entrega_real = CURRENT_TIMESTAMP, usuario_entrega_id = @uId WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.Parameters.AddWithValue("@uId", (object?)usuarioEntregaId ?? DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }
     }

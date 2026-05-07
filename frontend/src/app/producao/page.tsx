@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react';
+import { FiShoppingBag } from 'react-icons/fi';
 import api from '@/services/api';
 import styles from './producao.module.css';
 
@@ -15,6 +16,8 @@ interface Encomenda {
   clienteTelefone: string;
   dataEntrega: string;
   status: number;
+  valorTotal: number;
+  observacao?: string;
   itens: ItemEncomenda[];
 }
 
@@ -22,7 +25,8 @@ export default function ProducaoPage() {
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [filtroData, setFiltroData] = useState<'hoje' | 'amanha' | 'pendentes'>('hoje');
   const [loading, setLoading] = useState(true);
-  const [telefoneModal, setTelefoneModal] = useState<{nome: string, telefone: string} | null>(null);
+  const [telefoneModal, setTelefoneModal] = useState<{ nome: string, telefone: string } | null>(null);
+  const [confirmarEntregaModal, setConfirmarEntregaModal] = useState<Encomenda | null>(null);
 
   useEffect(() => {
     carregarEncomendas();
@@ -51,10 +55,22 @@ export default function ProducaoPage() {
     }
   };
 
+  const handleConfirmarEntrega = async (id: number) => {
+    try {
+      const usuarioId = localStorage.getItem('usuario_id');
+      await api.post(`/api/Encomenda/${id}/entrega`, { usuarioId: usuarioId ? parseInt(usuarioId) : null });
+      alert("Entrega confirmada com sucesso!");
+      setConfirmarEntregaModal(null);
+      carregarEncomendas();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Erro ao registrar entrega. Verifique o pagamento.");
+    }
+  };
+
   const filtrarEncomendas = () => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
+
     const amanha = new Date(hoje);
     amanha.setDate(amanha.getDate() + 1);
 
@@ -65,8 +81,8 @@ export default function ProducaoPage() {
 
       if (filtroData === 'hoje') return isHoje;
       if (filtroData === 'amanha') return isAmanha;
-      if (filtroData === 'pendentes') return enc.status === 0 || enc.status === 1; 
-      
+      if (filtroData === 'pendentes') return enc.status === 0 || enc.status === 1;
+
       return true;
     });
   };
@@ -74,25 +90,25 @@ export default function ProducaoPage() {
   const formatarDataHora = (dataStr: string) => {
     const data = new Date(dataStr);
     const hoje = new Date();
-    hoje.setHours(0,0,0,0);
+    hoje.setHours(0, 0, 0, 0);
     const amanha = new Date(hoje);
     amanha.setDate(amanha.getDate() + 1);
-    
+
     const hora = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    
+
     const dataApenas = new Date(data);
-    dataApenas.setHours(0,0,0,0);
-    
+    dataApenas.setHours(0, 0, 0, 0);
+
     if (dataApenas.getTime() === hoje.getTime()) {
-        return `Hoje às ${hora}`;
+      return `Hoje às ${hora}`;
     } else if (dataApenas.getTime() === amanha.getTime()) {
-        return `Amanhã às ${hora}`;
+      return `Amanhã às ${hora}`;
     } else {
-        return `${data.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})} às ${hora}`;
+      return `${data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${hora}`;
     }
   };
 
-  if (loading) return <p style={{padding: 40}}>Carregando dashboard de produção...</p>;
+  if (loading) return <p style={{ padding: 40 }}>Carregando dashboard de produção...</p>;
 
   const encomendasFiltradas = filtrarEncomendas();
 
@@ -101,19 +117,19 @@ export default function ProducaoPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Painel de Produção</h1>
         <div className={styles.filters}>
-          <button 
+          <button
             className={`${styles.filterBtn} ${filtroData === 'hoje' ? styles.filterBtnActive : ''}`}
             onClick={() => setFiltroData('hoje')}
           >
             Hoje
           </button>
-          <button 
+          <button
             className={`${styles.filterBtn} ${filtroData === 'amanha' ? styles.filterBtnActive : ''}`}
             onClick={() => setFiltroData('amanha')}
           >
             Amanhã
           </button>
-          <button 
+          <button
             className={`${styles.filterBtn} ${filtroData === 'pendentes' ? styles.filterBtnActive : ''}`}
             onClick={() => setFiltroData('pendentes')}
           >
@@ -124,12 +140,12 @@ export default function ProducaoPage() {
 
       <div className={styles.grid}>
         {encomendasFiltradas.length === 0 ? (
-          <p style={{fontSize: '1.2rem', color: '#666'}}>Nenhuma encomenda para o filtro selecionado.</p>
+          <p style={{ fontSize: '1.2rem', color: '#666' }}>Nenhuma encomenda para o filtro selecionado.</p>
         ) : (
           encomendasFiltradas.map((enc) => {
             // Status cancelado ou entregue não entram no dashboard
-            if (enc.status === 3 || enc.status === 4) return null; 
-            
+            if (enc.status === 3 || enc.status === 4) return null;
+
             let statusClass = styles.status0;
             let statusText = "Pendente";
             if (enc.status === 1) { statusClass = styles.status1; statusText = "Em Produção"; }
@@ -139,18 +155,18 @@ export default function ProducaoPage() {
               <div key={enc.id} className={styles.card}>
                 <div className={`${styles.cardHeader} ${statusClass}`}>
                   <span>{formatarDataHora(enc.dataEntrega)}</span>
-                  <span style={{fontSize: '1rem'}}>{statusText}</span>
+                  <span style={{ fontSize: '1rem' }}>{statusText}</span>
                 </div>
-                
+
                 <div className={styles.cardBody}>
-                  <div 
-                    className={styles.clientName} 
+                  <div
+                    className={styles.clientName}
                     onClick={() => setTelefoneModal({ nome: enc.clienteNome, telefone: enc.clienteTelefone || 'Não informado' })}
                     title="Clique para ver o contato do cliente"
                   >
                     {enc.clienteNome}
                   </div>
-                  
+
                   <ul className={styles.itemList}>
                     {enc.itens?.map(item => (
                       <li key={item.id} className={styles.item}>
@@ -158,9 +174,9 @@ export default function ProducaoPage() {
                       </li>
                     ))}
                   </ul>
-                  
+
                   {enc.observacao && (
-                    <p style={{marginTop: '15px', color: '#eab308', fontStyle: 'italic', fontSize: '1.1rem'}}>
+                    <p style={{ marginTop: '15px', color: '#eab308', fontStyle: 'italic', fontSize: '1.1rem' }}>
                       <strong>Obs:</strong> {enc.observacao}
                     </p>
                   )}
@@ -178,7 +194,8 @@ export default function ProducaoPage() {
                     </button>
                   )}
                   {enc.status === 2 && (
-                    <button className={`${styles.actionBtn} ${styles.btnDeliver}`} onClick={() => atualizarStatus(enc.id, 4)}>
+                    <button className={`${styles.actionBtn} ${styles.btnDeliver}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={() => setConfirmarEntregaModal(enc)}>
+                      <FiShoppingBag size={20} />
                       Confirmar Entrega
                     </button>
                   )}
@@ -194,10 +211,47 @@ export default function ProducaoPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <h2>Contato do Cliente</h2>
             <p><strong>{telefoneModal.nome}</strong></p>
-            <p style={{fontSize: '1.8rem', color: '#5B0A1A', fontWeight: 'bold', margin: '20px 0'}}>
+            <p style={{ fontSize: '1.8rem', color: '#5B0A1A', fontWeight: 'bold', margin: '20px 0' }}>
               {telefoneModal.telefone}
             </p>
             <button className={styles.btnClose} onClick={() => setTelefoneModal(null)}>Voltar à Produção</button>
+          </div>
+        </div>
+      )}
+
+      {confirmarEntregaModal && (
+        <div className={styles.modalOverlay} onClick={() => setConfirmarEntregaModal(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <h2 style={{ color: '#5B0A1A', marginBottom: '5px' }}>Resumo da Entrega</h2>
+            <p style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '20px' }}>{confirmarEntregaModal.clienteNome}</p>
+
+            <div style={{ textAlign: 'left', marginBottom: '25px', backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '12px', border: '1px solid #edf2f7' }}>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {confirmarEntregaModal.itens?.map(item => (
+                  <li key={item.id} style={{ marginBottom: '10px', fontSize: '1.1rem', color: '#4a5568' }}>
+                    <strong>{item.quantidade}x</strong> {item.produtoNome}
+                  </li>
+                ))}
+              </ul>
+              <div style={{ marginTop: '20px', borderTop: '2px dashed #cbd5e0', paddingTop: '15px', fontSize: '1.4rem', fontWeight: 'bold', color: '#2d3748', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Total a Pagar:</span>
+                <span style={{ color: '#5B0A1A' }}>R$ {confirmarEntregaModal.valorTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button className={styles.btnClose} style={{ flex: 1, margin: 0, padding: '15px' }} onClick={() => setConfirmarEntregaModal(null)}>
+                Voltar
+              </button>
+              <button
+                className={`${styles.actionBtn} ${styles.btnDeliver}`}
+                style={{ flex: 1, padding: '15px', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                onClick={() => handleConfirmarEntrega(confirmarEntregaModal.id)}
+              >
+                <FiShoppingBag size={20} />
+                Entregar
+              </button>
+            </div>
           </div>
         </div>
       )}

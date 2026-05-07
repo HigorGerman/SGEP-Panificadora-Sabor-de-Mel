@@ -19,5 +19,8 @@ public class Encomenda {
     public string? Observacao { get; set; }
     public string? ClienteNome { get; set; }
     public string? ClienteTelefone { get; set; }
+    public DateTime? DataEntregaReal { get; set; }
+    public string? PagamentoForma { get; set; }
+    public string? UsuarioEntregaNome { get; set; }
     public List<ItemEncomenda> Itens { get; set; } = new List<ItemEncomenda>();
 }

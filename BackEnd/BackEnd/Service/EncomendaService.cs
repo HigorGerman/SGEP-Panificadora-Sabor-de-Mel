@@ -78,5 +78,10 @@ namespace BackEnd.Services
         {
             return _repository.AtualizarStatus(id, status);
         }
+
+        public bool RegistrarEntrega(int id, int? usuarioEntregaId)
+        {
+            return _repository.RegistrarEntrega(id, usuarioEntregaId);
+        }
     }
 }
