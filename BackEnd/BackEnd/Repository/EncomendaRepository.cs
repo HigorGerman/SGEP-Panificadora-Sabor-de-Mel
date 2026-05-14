@@ -43,13 +43,14 @@ namespace BackEnd.Repository
                     {
                         using var cmdItem = conexao.CreateCommand();
                         cmdItem.Transaction = transacao;
-                        cmdItem.CommandText = @"INSERT INTO item_encomenda (encomenda_id, produto_id, quantidade, preco_no_ato) 
-                                               VALUES (@encId, @prodId, @qtd, @preco)";
+                        cmdItem.CommandText = @"INSERT INTO item_encomenda (encomenda_id, produto_id, quantidade, preco_no_ato, especificacoes_tecnicas) 
+                                               VALUES (@encId, @prodId, @qtd, @preco, @specs::jsonb)";
 
                         cmdItem.Parameters.AddWithValue("@encId", encomenda.Id);
                         cmdItem.Parameters.AddWithValue("@prodId", item.ProdutoId);
                         cmdItem.Parameters.AddWithValue("@qtd", item.Quantidade);
                         cmdItem.Parameters.AddWithValue("@preco", item.PrecoUnitario);
+                        cmdItem.Parameters.AddWithValue("@specs", (object?)item.EspecificacoesTecnicas ?? DBNull.Value);
 
                         cmdItem.ExecuteNonQuery();
                     }
@@ -104,6 +105,7 @@ namespace BackEnd.Repository
                         item.ProdutoId = drItens.GetInt32(drItens.GetOrdinal("produto_id"));
                         item.Quantidade = drItens.GetInt32(drItens.GetOrdinal("quantidade"));
                         item.PrecoUnitario = drItens.GetDecimal(drItens.GetOrdinal("preco_no_ato"));
+                        item.EspecificacoesTecnicas = drItens.IsDBNull(drItens.GetOrdinal("especificacoes_tecnicas")) ? null : drItens.GetString(drItens.GetOrdinal("especificacoes_tecnicas"));
                         enc.Itens.Add(item);
                     }
                 }
@@ -149,13 +151,14 @@ namespace BackEnd.Repository
                     {
                         using var cmdItem = conexao.CreateCommand();
                         cmdItem.Transaction = transacao;
-                        cmdItem.CommandText = @"INSERT INTO item_encomenda (encomenda_id, produto_id, quantidade, preco_no_ato) 
-                                               VALUES (@encId, @prodId, @qtd, @preco)";
+                        cmdItem.CommandText = @"INSERT INTO item_encomenda (encomenda_id, produto_id, quantidade, preco_no_ato, especificacoes_tecnicas) 
+                                               VALUES (@encId, @prodId, @qtd, @preco, @specs::jsonb)";
 
                         cmdItem.Parameters.AddWithValue("@encId", encomenda.Id);
                         cmdItem.Parameters.AddWithValue("@prodId", item.ProdutoId);
                         cmdItem.Parameters.AddWithValue("@qtd", item.Quantidade);
                         cmdItem.Parameters.AddWithValue("@preco", item.PrecoUnitario);
+                        cmdItem.Parameters.AddWithValue("@specs", (object?)item.EspecificacoesTecnicas ?? DBNull.Value);
 
                         cmdItem.ExecuteNonQuery();
                     }
@@ -246,7 +249,7 @@ namespace BackEnd.Repository
 
             // Auto-completa encomendas que o horário já passou
             using var cmdUpdate = conexao.CreateCommand();
-            cmdUpdate.CommandText = "UPDATE encomenda SET status_enum = 2 WHERE status_enum < 2 AND data_retirada <= NOW()";
+            cmdUpdate.CommandText = "UPDATE encomenda SET status_enum = 2 WHERE status_enum < 2 AND data_retirada <= (NOW() AT TIME ZONE 'America/Sao_Paulo')";
             cmdUpdate.ExecuteNonQuery();
 
             using var cmd = conexao.CreateCommand();
@@ -297,6 +300,7 @@ namespace BackEnd.Repository
                 item.Quantidade = drItens.GetInt32(drItens.GetOrdinal("quantidade"));
                 item.PrecoUnitario = drItens.GetDecimal(drItens.GetOrdinal("preco_no_ato"));
                 item.ProdutoNome = drItens.GetString(drItens.GetOrdinal("produto_nome"));
+                item.EspecificacoesTecnicas = drItens.IsDBNull(drItens.GetOrdinal("especificacoes_tecnicas")) ? null : drItens.GetString(drItens.GetOrdinal("especificacoes_tecnicas"));
                 
                 dictItens[encId].Add(item);
             }
@@ -367,8 +371,10 @@ namespace BackEnd.Repository
             }
 
             using var cmd = conexao.CreateCommand();
-            cmd.CommandText = "UPDATE encomenda SET status_enum = 4, data_entrega_real = CURRENT_TIMESTAMP, usuario_entrega_id = @uId WHERE id = @id";
+            DateTime horaBrasilia = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time"));
+            cmd.CommandText = "UPDATE encomenda SET status_enum = 4, data_entrega_real = @dataEntregaReal, usuario_entrega_id = @uId WHERE id = @id";
             cmd.Parameters.AddWithValue("@id", id);
+            cmd.Parameters.AddWithValue("@dataEntregaReal", horaBrasilia);
             cmd.Parameters.AddWithValue("@uId", (object?)usuarioEntregaId ?? DBNull.Value);
             return cmd.ExecuteNonQuery() > 0;
         }

@@ -52,7 +52,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className={styles.form}>
           {error && <div className={styles.toastError}>{error}</div>}
-          
+
           <div className={styles.inputGroup}>
             <label>E-mail</label>
             <div className={styles.inputWrapper}>

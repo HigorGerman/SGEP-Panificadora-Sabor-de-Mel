@@ -31,7 +31,8 @@ namespace BackEnd.Controllers
                     Itens = dto.Itens.Select(i => new ItemEncomenda
                     {
                         ProdutoId = i.ProdutoId,
-                        Quantidade = i.Quantidade
+                        Quantidade = i.Quantidade,
+                        EspecificacoesTecnicas = i.EspecificacoesTecnicas
                     }).ToList()
                 };
 
@@ -101,7 +102,8 @@ namespace BackEnd.Controllers
                     Itens = dto.Itens.Select(i => new ItemEncomenda
                     {
                         ProdutoId = i.ProdutoId,
-                        Quantidade = i.Quantidade
+                        Quantidade = i.Quantidade,
+                        EspecificacoesTecnicas = i.EspecificacoesTecnicas
                     }).ToList()
                 };
 

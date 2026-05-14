@@ -23,7 +23,9 @@ namespace BackEnd.Repository
                 PrecoUnitario = dr.GetDecimal(dr.GetOrdinal("preco_unitario")),
                 CategoriaId = dr.GetInt32(dr.GetOrdinal("categoria_id")),
                 ImagemUrl = dr.IsDBNull(dr.GetOrdinal("imagem_url")) ? null : dr.GetString(dr.GetOrdinal("imagem_url")),
-                Descricao = dr.IsDBNull(dr.GetOrdinal("descricao")) ? null : dr.GetString(dr.GetOrdinal("descricao"))
+                Descricao = dr.IsDBNull(dr.GetOrdinal("descricao")) ? null : dr.GetString(dr.GetOrdinal("descricao")),
+                PermiteCustomizacao = dr.GetBoolean(dr.GetOrdinal("permite_customizacao")),
+                TemplateCustomizacao = dr.IsDBNull(dr.GetOrdinal("template_customizacao")) ? null : dr.GetString(dr.GetOrdinal("template_customizacao"))
             };
         }
 
@@ -31,8 +33,8 @@ namespace BackEnd.Repository
         public bool Criar(Produto produto)
         {
             using var cmd = _context.GetConexao().CreateCommand();
-            cmd.CommandText = @"INSERT INTO produto (nome, preco_unitario, categoria_id, imagem_url, descricao) 
-                        VALUES (@nome, @preco, @categoriaId, @img, @descricao) 
+            cmd.CommandText = @"INSERT INTO produto (nome, preco_unitario, categoria_id, imagem_url, descricao, permite_customizacao, template_customizacao) 
+                        VALUES (@nome, @preco, @categoriaId, @img, @descricao, @permiteCustomizacao, CAST(@templateCustomizacao AS jsonb)) 
                         RETURNING id";
 
             cmd.Parameters.AddWithValue("@nome", produto.Nome);
@@ -40,6 +42,8 @@ namespace BackEnd.Repository
             cmd.Parameters.AddWithValue("@categoriaId", produto.CategoriaId);
             cmd.Parameters.AddWithValue("@img", (object?)produto.ImagemUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@descricao", (object?)produto.Descricao ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@permiteCustomizacao", produto.PermiteCustomizacao);
+            cmd.Parameters.AddWithValue("@templateCustomizacao", string.IsNullOrEmpty(produto.TemplateCustomizacao) ? DBNull.Value : (object)produto.TemplateCustomizacao);
 
             produto.Id = (int)cmd.ExecuteScalar();
             return true;
@@ -83,11 +87,13 @@ namespace BackEnd.Repository
         {
             using var cmd = _context.GetConexao().CreateCommand();
             cmd.CommandText = @"UPDATE produto SET nome = @nome, preco_unitario = @preco, 
-                        categoria_id = @catId, descricao = @descricao WHERE id = @id";
+                        categoria_id = @catId, descricao = @descricao, permite_customizacao = @permiteCustomizacao, template_customizacao = CAST(@templateCustomizacao AS jsonb) WHERE id = @id";
             cmd.Parameters.AddWithValue("@nome", produto.Nome);
             cmd.Parameters.AddWithValue("@preco", produto.PrecoUnitario);
             cmd.Parameters.AddWithValue("@catId", produto.CategoriaId);
             cmd.Parameters.AddWithValue("@descricao", (object?)produto.Descricao ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@permiteCustomizacao", produto.PermiteCustomizacao);
+            cmd.Parameters.AddWithValue("@templateCustomizacao", string.IsNullOrEmpty(produto.TemplateCustomizacao) ? DBNull.Value : (object)produto.TemplateCustomizacao);
             cmd.Parameters.AddWithValue("@id", produto.Id);
             return cmd.ExecuteNonQuery() > 0;
         }

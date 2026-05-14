@@ -14,6 +14,8 @@ interface Produto {
   ingredientes?: string;
   modoPreparo?: string;
   rendimento?: string;
+  permiteCustomizacao?: boolean;
+  templateCustomizacao?: string;
 }
 
 interface Categoria {
@@ -40,7 +42,9 @@ export default function ProdutosPage() {
     descricao: '',
     ingredientes: '',
     modoPreparo: '',
-    rendimento: ''
+    rendimento: '',
+    permiteCustomizacao: false,
+    templateCustomizacao: ''
   });
 
   useEffect(() => {
@@ -81,8 +85,17 @@ export default function ProdutosPage() {
         Descricao: novoProduto.descricao,
         Ingredientes: novoProduto.ingredientes,
         ModoPreparo: novoProduto.modoPreparo,
-        Rendimento: novoProduto.rendimento
+        Rendimento: novoProduto.rendimento,
+        PermiteCustomizacao: novoProduto.permiteCustomizacao,
+        TemplateCustomizacao: null as string | null
       };
+
+      if (novoProduto.permiteCustomizacao && novoProduto.templateCustomizacao) {
+        const fields = novoProduto.templateCustomizacao.split(',').map(f => f.trim()).filter(f => f);
+        if (fields.length > 0) {
+          payload.TemplateCustomizacao = JSON.stringify(fields);
+        }
+      }
 
       if (editId) {
         await api.put(`/Produtos/${editId}`, payload);
@@ -94,7 +107,7 @@ export default function ProdutosPage() {
       
       setIsModalOpen(false); // Fecha o modal
       setEditId(null);
-      setNovoProduto({ nome: '', precoUnitario: '', categoriaId: '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '' }); // Limpa
+      setNovoProduto({ nome: '', precoUnitario: '', categoriaId: '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '', permiteCustomizacao: false, templateCustomizacao: '' }); // Limpa
       carregarProdutos(); // Recarrega a lista
     } catch (error) {
       alert("Erro ao salvar produto. Verifique os campos.");
@@ -107,6 +120,14 @@ export default function ProdutosPage() {
       const response = await api.get(`/Produtos/${produto.id}`);
       const dados = response.data;
 
+      let templateStr = '';
+      if (dados.templateCustomizacao) {
+        try {
+          const arr = JSON.parse(dados.templateCustomizacao);
+          if (Array.isArray(arr)) templateStr = arr.join(', ');
+        } catch(e) {}
+      }
+
       setNovoProduto({
         nome: dados.nome,
         precoUnitario: dados.precoUnitario,
@@ -115,7 +136,9 @@ export default function ProdutosPage() {
         descricao: dados.descricao || '',
         ingredientes: dados.ingredientes || '',
         modoPreparo: dados.modoPreparo || '',
-        rendimento: dados.rendimento || ''
+        rendimento: dados.rendimento || '',
+        permiteCustomizacao: dados.permiteCustomizacao || false,
+        templateCustomizacao: templateStr
       });
       setEditId(produto.id);
       setIsModalOpen(true);
@@ -160,7 +183,7 @@ export default function ProdutosPage() {
         {userRole === '0' && (
           <button className={styles.btnNovo} onClick={() => {
             setEditId(null);
-            setNovoProduto({ nome: '', precoUnitario: '', categoriaId: categorias.length > 0 ? categorias[0].id : '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '' });
+            setNovoProduto({ nome: '', precoUnitario: '', categoriaId: categorias.length > 0 ? categorias[0].id : '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '', permiteCustomizacao: false, templateCustomizacao: '' });
             setIsModalOpen(true);
           }}>
             + Novo Produto
@@ -273,6 +296,32 @@ export default function ProdutosPage() {
                   placeholder="https://link-da-imagem.com/foto.jpg"
                 />
               </div>
+
+              <div className={styles.inputGroup} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input 
+                  type="checkbox" 
+                  id="chkCustom"
+                  checked={novoProduto.permiteCustomizacao}
+                  onChange={e => setNovoProduto({...novoProduto, permiteCustomizacao: e.target.checked})}
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                />
+                <label htmlFor="chkCustom" style={{ marginBottom: 0, cursor: 'pointer' }}>
+                  Permite Personalização? (Exibir campos de detalhes na encomenda)
+                </label>
+              </div>
+
+              {novoProduto.permiteCustomizacao && (
+                <div className={styles.inputGroup} style={{ backgroundColor: '#fff5f5', padding: '15px', borderRadius: '8px', border: '1px solid #feb2b2' }}>
+                  <label style={{ color: '#5B0A1A', fontWeight: 'bold' }}>Template de Campos (Separados por vírgula)</label>
+                  <input 
+                    type="text" 
+                    value={novoProduto.templateCustomizacao}
+                    onChange={e => setNovoProduto({...novoProduto, templateCustomizacao: e.target.value})}
+                    placeholder="Ex: Formato, Recheio, Tema, Cor..."
+                  />
+                  <small style={{ color: '#718096', display: 'block', marginTop: '5px' }}>Esses serão os campos que o sistema vai perguntar ao adicionar na encomenda.</small>
+                </div>
+              )}
 
               {(userRole === '0' || userRole === '1') && (
                 <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>

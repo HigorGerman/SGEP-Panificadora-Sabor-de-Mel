@@ -9,6 +9,7 @@ interface ItemEncomenda {
   produtoNome: string;
   quantidade: number;
   precoUnitario: number;
+  especificacoesTecnicas?: string;
 }
 
 interface Encomenda {
@@ -222,8 +223,23 @@ export default function HistoricoPage() {
                 <h4 style={{borderBottom: '1px solid #eee', paddingBottom: '5px', marginBottom: '10px'}}>Itens do Pedido</h4>
                 <ul className={styles.itemList}>
                   {modalEnc.itens?.map(item => (
-                    <li key={item.id} className={styles.itemRow}>
+                    <li key={item.id} className={styles.itemRow} style={{flexDirection: 'column', alignItems: 'flex-start'}}>
                       <span>{item.quantidade}x {item.produtoNome}</span>
+                      {item.especificacoesTecnicas && (
+                        <span style={{fontSize: '0.8rem', color: '#666'}}>
+                          {(() => {
+                            try {
+                              const parsed = JSON.parse(item.especificacoesTecnicas);
+                              if (typeof parsed === 'object' && parsed !== null) {
+                                return Object.entries(parsed).map(([k,v]) => `${k}: ${v}`).join(' | ');
+                              }
+                              return item.especificacoesTecnicas;
+                            } catch(e) {
+                              return item.especificacoesTecnicas;
+                            }
+                          })()}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>

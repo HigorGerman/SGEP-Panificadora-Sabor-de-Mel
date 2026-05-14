@@ -14,8 +14,35 @@ builder.Services.AddCors(options =>
     options.AddPolicy("SGEP_Policy", policy => 
         policy.WithOrigins("http://localhost:3000")
             .AllowAnyMethod()
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowCredentials());
 });
+
+// --- Autenticação (JWT) ---
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("SuperSecretKeyThatIsAtLeast32BytesLong"))
+        };
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Cookies["jwt"];
+                if (!string.IsNullOrEmpty(token))
+                {
+                    context.Token = token;
+                }
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+        };
+    });
 
 // --- Injeção de Dependência (Banco de Dados) ---
 builder.Services.AddScoped<PostgresDbContext>();
@@ -34,6 +61,7 @@ builder.Services.AddScoped<ClienteServices>();
 builder.Services.AddScoped<ProdutoServices>();
 builder.Services.AddScoped<EncomendaServices>();
 builder.Services.AddScoped<CategoriaService>();
+builder.Services.AddScoped<TokenService>();
 
 var app = builder.Build();
 
@@ -46,6 +74,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("SGEP_Policy");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

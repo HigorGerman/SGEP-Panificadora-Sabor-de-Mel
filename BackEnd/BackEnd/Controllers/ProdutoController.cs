@@ -40,7 +40,9 @@ namespace BackEnd.Controllers
                         Ingredientes = request.Ingredientes,
                         ModoPreparo = request.ModoPreparo,
                         Rendimento = request.Rendimento
-                    }
+                    },
+                    PermiteCustomizacao = request.PermiteCustomizacao,
+                    TemplateCustomizacao = request.TemplateCustomizacao
                 };
 
                 var ok = _services.Criar(produto);
@@ -65,10 +67,13 @@ namespace BackEnd.Controllers
                 PrecoUnitario = p.PrecoUnitario,
                 CategoriaId = p.CategoriaId,
                 ImagemUrl = p.ImagemUrl,
-                Descricao = p.Descricao
+                Descricao = p.Descricao,
+                PermiteCustomizacao = p.PermiteCustomizacao,
+                TemplateCustomizacao = p.TemplateCustomizacao
             });
             return Ok(produtos);
         }
+        
 
         [HttpGet("com-receitas")]
         public IActionResult ListarComReceitas()
@@ -82,7 +87,9 @@ namespace BackEnd.Controllers
                 Descricao = p.Descricao,
                 Ingredientes = p.Receita?.Ingredientes,
                 ModoPreparo = p.Receita?.ModoPreparo,
-                Rendimento = p.Receita?.Rendimento
+                Rendimento = p.Receita?.Rendimento,
+                PermiteCustomizacao = p.PermiteCustomizacao,
+                TemplateCustomizacao = p.TemplateCustomizacao
             });
             return Ok(produtos);
         }
@@ -102,7 +109,9 @@ namespace BackEnd.Controllers
                 Descricao = produto.Descricao,
                 Ingredientes = produto.Receita?.Ingredientes,
                 ModoPreparo = produto.Receita?.ModoPreparo,
-                Rendimento = produto.Receita?.Rendimento
+                Rendimento = produto.Receita?.Rendimento,
+                PermiteCustomizacao = produto.PermiteCustomizacao,
+                TemplateCustomizacao = produto.TemplateCustomizacao
             });
         }
 
@@ -121,7 +130,9 @@ namespace BackEnd.Controllers
                     Ingredientes = request.Ingredientes,
                     ModoPreparo = request.ModoPreparo,
                     Rendimento = request.Rendimento
-                }
+                },
+                PermiteCustomizacao = request.PermiteCustomizacao,
+                TemplateCustomizacao = request.TemplateCustomizacao
             };
             return _services.Alterar(produto) ? Ok() : BadRequest();
         }

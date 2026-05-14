@@ -8,6 +8,7 @@ interface ItemEncomenda {
   id: number;
   produtoNome: string;
   quantidade: number;
+  especificacoesTecnicas?: string;
 }
 
 interface Encomenda {
@@ -169,8 +170,25 @@ export default function ProducaoPage() {
 
                   <ul className={styles.itemList}>
                     {enc.itens?.map(item => (
-                      <li key={item.id} className={styles.item}>
-                        <strong>{item.quantidade}x</strong>&nbsp;{item.produtoNome}
+                      <li key={item.id} className={styles.item} style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+                        <div>
+                          <strong>{item.quantidade}x</strong>&nbsp;{item.produtoNome}
+                        </div>
+                        {item.especificacoesTecnicas && (
+                          <div style={{fontSize: '0.8rem', color: '#666', marginTop: '4px'}}>
+                            {(() => {
+                              try {
+                                const parsed = JSON.parse(item.especificacoesTecnicas);
+                                if (typeof parsed === 'object' && parsed !== null) {
+                                  return Object.entries(parsed).map(([k,v]) => `${k}: ${v}`).join(' | ');
+                                }
+                                return item.especificacoesTecnicas;
+                              } catch(e) {
+                                return item.especificacoesTecnicas;
+                              }
+                            })()}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

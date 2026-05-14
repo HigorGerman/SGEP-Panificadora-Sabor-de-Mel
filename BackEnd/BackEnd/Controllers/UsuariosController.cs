@@ -12,12 +12,14 @@ namespace BackEnd.Controllers
         // Declaramos os dois serviços aqui no topo
         private readonly UsuarioServices _usuarioServices;
         private readonly ClienteServices _clienteServices;
+        private readonly TokenService _tokenService;
 
         // O construtor agora recebe os dois. O ASP.NET resolve isso sozinho para você.
-        public UsuariosController(UsuarioServices usuarioServices, ClienteServices clienteServices)
+        public UsuariosController(UsuarioServices usuarioServices, ClienteServices clienteServices, TokenService tokenService)
         {
             _usuarioServices = usuarioServices;
             _clienteServices = clienteServices;
+            _tokenService = tokenService;
         }
 
         [HttpPost]
@@ -96,6 +98,9 @@ namespace BackEnd.Controllers
             var usuario = _usuarioServices.Autenticar(loginDto.Email, loginDto.Senha);
             if (usuario != null)
             {
+                var token = _tokenService.GenerateToken(usuario.Id.ToString(), ((int)usuario.Perfil).ToString(), usuario.UsuarioNome);
+                AppendTokenCookie(token);
+
                 return Ok(new { 
                     Id = usuario.Id, 
                     Nome = usuario.UsuarioNome, 
@@ -108,6 +113,9 @@ namespace BackEnd.Controllers
             var cliente = _clienteServices.Autenticar(loginDto.Email, loginDto.Senha);
             if (cliente != null)
             {
+                var token = _tokenService.GenerateToken(cliente.Id.ToString(), "Cliente", cliente.Nome);
+                AppendTokenCookie(token);
+
                 return Ok(new { 
                     Id = cliente.Id, 
                     Nome = cliente.Nome, 
@@ -117,6 +125,17 @@ namespace BackEnd.Controllers
             }
 
             return Unauthorized(new { message = "E-mail ou senha incorretos." });
+        }
+
+        private void AppendTokenCookie(string token)
+        {
+            Response.Cookies.Append("jwt", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true, // Idealmente em produção. O SameSite=Strict requer HTTPS se Secure=true na maioria dos browsers modernos (ou localhost).
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddHours(8)
+            });
         }
     }
 }

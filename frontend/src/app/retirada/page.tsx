@@ -8,6 +8,7 @@ interface ItemEncomenda {
   id: number;
   produtoNome: string;
   quantidade: number;
+  especificacoesTecnicas?: string;
 }
 
 interface Encomenda {
@@ -100,7 +101,24 @@ export default function RetiradaPage() {
                   {enc.itens?.map(item => (
                     <li key={item.id} className={styles.item}>
                       <span className={styles.itemQtd}>{item.quantidade}x</span>
-                      <span className={styles.itemName}>{item.produtoNome}</span>
+                      <div style={{display: 'flex', flexDirection: 'column'}}>
+                        <span className={styles.itemName}>{item.produtoNome}</span>
+                        {item.especificacoesTecnicas && (
+                          <span style={{fontSize: '0.8rem', color: '#666'}}>
+                            {(() => {
+                              try {
+                                const parsed = JSON.parse(item.especificacoesTecnicas);
+                                if (typeof parsed === 'object' && parsed !== null) {
+                                  return Object.entries(parsed).map(([k,v]) => `${k}: ${v}`).join(' | ');
+                                }
+                                return item.especificacoesTecnicas;
+                              } catch(e) {
+                                return item.especificacoesTecnicas;
+                              }
+                            })()}
+                          </span>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

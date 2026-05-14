@@ -11,5 +11,6 @@ public record EncomendaCreateDto(
 
 public record ItemEncomendaDto(
     int ProdutoId,
-    int Quantidade
+    int Quantidade,
+    string? EspecificacoesTecnicas
 );

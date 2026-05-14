@@ -12,6 +12,8 @@ interface Produto {
   imagemUrl?: string;
   descricao?: string;
   categoriaId?: number;
+  permiteCustomizacao?: boolean;
+  templateCustomizacao?: string;
 }
 
 interface CartItem {
@@ -19,20 +21,26 @@ interface CartItem {
   nome: string;
   precoUnitario: number;
   quantidade: number;
+  especificacoesTecnicas?: string;
 }
 
 export default function NovaEncomenda() {
   const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [categorias, setCategorias] = useState<{id: number, descricao: string}[]>([]);
+  const [categorias, setCategorias] = useState<{ id: number, descricao: string }[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [quantidades, setQuantidades] = useState<Record<number, number>>({});
   const [cart, setCart] = useState<CartItem[]>([]);
-  
+
   // Modals
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
-  
+  const [customModalOpen, setCustomModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
+
+  // Custom fields
+  const [customFields, setCustomFields] = useState<Record<string, string>>({});
+
   // Form fields
   const [dataEntrega, setDataEntrega] = useState('');
   const [observacao, setObservacao] = useState('');
@@ -48,10 +56,10 @@ export default function NovaEncomenda() {
         api.get('/Produtos'),
         api.get('/Categorias')
       ]);
-      
+
       setProdutos(resProd.data);
       setCategorias(resCat.data);
-      
+
       // Initialize quantities to 1
       const initialQuantities: Record<number, number> = {};
       resProd.data.forEach((p: Produto) => {
@@ -72,25 +80,59 @@ export default function NovaEncomenda() {
     }
   };
 
-  const addToCart = (produto: Produto) => {
+  const addToCart = (produto: Produto, specs?: string) => {
     const quantidade = quantidades[produto.id] || 1;
-    
+
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.produtoId === produto.id);
+      const existingItem = prevCart.find(item => item.produtoId === produto.id && item.especificacoesTecnicas === specs);
       if (existingItem) {
-        return prevCart.map(item => 
-          item.produtoId === produto.id 
+        return prevCart.map(item =>
+          item.produtoId === produto.id && item.especificacoesTecnicas === specs
             ? { ...item, quantidade: item.quantidade + quantidade }
             : item
         );
       }
-      return [...prevCart, { 
-        produtoId: produto.id, 
-        nome: produto.nome, 
-        precoUnitario: produto.precoUnitario, 
-        quantidade 
+      return [...prevCart, {
+        produtoId: produto.id,
+        nome: produto.nome,
+        precoUnitario: produto.precoUnitario,
+        quantidade,
+        especificacoesTecnicas: specs
       }];
     });
+  };
+
+  const handleAddClick = (produto: Produto) => {
+    if (produto.permiteCustomizacao) {
+      setSelectedProduct(produto);
+      let initialFields: Record<string, string> = {};
+      if (produto.templateCustomizacao) {
+        try {
+          const arr = JSON.parse(produto.templateCustomizacao);
+          if (Array.isArray(arr)) {
+            arr.forEach((field: string) => {
+              initialFields[field] = '';
+            });
+          }
+        } catch (e) { }
+      }
+      setCustomFields(initialFields);
+      setCustomModalOpen(true);
+    } else {
+      addToCart(produto);
+    }
+  };
+
+  const handleCustomConfirm = () => {
+    if (selectedProduct) {
+      const specsObj: Record<string, string> = {};
+      Object.keys(customFields).forEach(key => {
+        specsObj[key] = customFields[key] || 'Não informado';
+      });
+      addToCart(selectedProduct, JSON.stringify(specsObj));
+    }
+    setCustomModalOpen(false);
+    setSelectedProduct(null);
   };
 
   const removeFromCart = (produtoId: number) => {
@@ -132,12 +174,13 @@ export default function NovaEncomenda() {
         observacao: observacao,
         itens: cart.map(item => ({
           produtoId: item.produtoId,
-          quantidade: item.quantidade
+          quantidade: item.quantidade,
+          especificacoesTecnicas: item.especificacoesTecnicas
         }))
       };
 
       const res = await api.post('/api/Encomenda', payload);
-      
+
       if (res.status === 200 || res.status === 201) {
         alert("Encomenda criada com sucesso!");
         setCart([]);
@@ -190,7 +233,7 @@ export default function NovaEncomenda() {
     const nomeMatch = p.nome.toLowerCase().includes(term);
     const descMatch = p.descricao && p.descricao.toLowerCase().includes(term);
     const catMatch = getCategoriaDescricao(p.categoriaId).toLowerCase().includes(term);
-    
+
     return nomeMatch || descMatch || catMatch;
   });
 
@@ -201,15 +244,15 @@ export default function NovaEncomenda() {
         <div className={styles.searchContainer}>
           <div className={styles.searchBar}>
             <FiSearch className={styles.searchIcon} size={20} />
-            <input 
-              type="text" 
-              placeholder="Buscar por nome, categoria ou descrição..." 
+            <input
+              type="text"
+              placeholder="Buscar por nome, categoria ou descrição..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
-        
+
         {filteredProdutos.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#a0aec0', padding: '40px 0', fontSize: '1.1rem' }}>
             Nenhum produto encontrado com esse nome.
@@ -219,9 +262,9 @@ export default function NovaEncomenda() {
             {filteredProdutos.map(produto => (
               <div key={produto.id} className={styles.card}>
                 {/* Foto placeholder se não houver imagem */}
-                <img 
-                  src={produto.imagemUrl || "https://placehold.co/400x300?text=Sem+Foto"} 
-                  alt={produto.nome} 
+                <img
+                  src={produto.imagemUrl || "https://placehold.co/400x300?text=Sem+Foto"}
+                  alt={produto.nome}
                   className={styles.cardImage}
                   onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300?text=Sem+Foto" }}
                 />
@@ -234,18 +277,18 @@ export default function NovaEncomenda() {
                 <div className={styles.cardPrice}>
                   R$ {produto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
-                
+
                 <div className={styles.cardActions}>
-                  <input 
-                    type="number" 
-                    min="1" 
+                  <input
+                    type="number"
+                    min="1"
                     className={styles.quantityInput}
                     value={quantidades[produto.id] || 1}
                     onChange={(e) => handleQuantityChange(produto.id, e.target.value)}
                   />
-                  <button 
+                  <button
                     className={styles.btnAdd}
-                    onClick={() => addToCart(produto)}
+                    onClick={() => handleAddClick(produto)}
                   >
                     Adicionar
                   </button>
@@ -259,7 +302,7 @@ export default function NovaEncomenda() {
       {/* Carrinho Lateral */}
       <div className={styles.cartSidebar}>
         <div className={styles.cartTitle}>Sua Encomenda</div>
-        
+
         <div className={styles.cartItems}>
           {cart.length === 0 ? (
             <div className={styles.emptyCart}>Adicione produtos para começar</div>
@@ -268,11 +311,16 @@ export default function NovaEncomenda() {
               <div key={item.produtoId} className={styles.cartItem}>
                 <div className={styles.cartItemDetails}>
                   <span className={styles.cartItemName}>{item.quantidade}x {item.nome}</span>
+                  {item.especificacoesTecnicas && (
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                      {Object.entries(JSON.parse(item.especificacoesTecnicas)).map(([k, v]) => `${k}: ${v}`).join(' | ')}
+                    </div>
+                  )}
                   <span className={styles.cartItemPrice}>
                     R$ {(item.precoUnitario * item.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <button 
+                <button
                   className={styles.cartItemRemove}
                   onClick={() => removeFromCart(item.produtoId)}
                 >
@@ -288,7 +336,7 @@ export default function NovaEncomenda() {
           <span>R$ {calcularTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
         </div>
 
-        <button 
+        <button
           className={styles.btnFinalize}
           disabled={cart.length === 0}
           onClick={handleFinalizarClick}
@@ -306,13 +354,13 @@ export default function NovaEncomenda() {
               Você precisa estar logado para finalizar uma encomenda. Por favor, faça login ou crie uma conta.
             </p>
             <div className={styles.modalActions}>
-              <button 
-                className={styles.btnCancelar} 
+              <button
+                className={styles.btnCancelar}
                 onClick={() => setLoginModalOpen(false)}
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 className={styles.btnConfirmar}
                 onClick={() => router.push('/login')}
               >
@@ -328,11 +376,11 @@ export default function NovaEncomenda() {
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalTitle}>Finalizar Encomenda</div>
-            
+
             <div className={styles.inputGroup}>
               <label>Data de Entrega / Retirada</label>
-              <input 
-                type="datetime-local" 
+              <input
+                type="datetime-local"
                 value={dataEntrega}
                 min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
                 onChange={(e) => handleDateChange(e.target.value)}
@@ -342,10 +390,10 @@ export default function NovaEncomenda() {
                 * Pedidos devem ser feitos com no mínimo 24h de antecedência.
               </small>
             </div>
-            
+
             <div className={styles.inputGroup}>
               <label>Observação (Opcional)</label>
-              <textarea 
+              <textarea
                 rows={3}
                 placeholder="Ex: Pães bem assados e clarinhos, fatiar o queijo..."
                 value={observacao}
@@ -360,19 +408,58 @@ export default function NovaEncomenda() {
             </div>
 
             <div className={styles.modalActions}>
-              <button 
-                className={styles.btnCancelar} 
+              <button
+                className={styles.btnCancelar}
                 onClick={() => setCheckoutModalOpen(false)}
                 disabled={loading}
               >
                 Voltar
               </button>
-              <button 
+              <button
                 className={styles.btnConfirmar}
                 onClick={submitEncomenda}
                 disabled={loading}
               >
                 {loading ? 'Enviando...' : 'Confirmar Pedido'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Personalização de Item */}
+      {customModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalTitle}>Personalizar Item</div>
+            <p style={{ marginBottom: '15px', color: '#4a5568', fontSize: '0.9rem' }}>
+              Preencha os detalhes para {selectedProduct?.nome}.
+            </p>
+
+            {Object.keys(customFields).map(field => (
+              <div key={field} className={styles.inputGroup}>
+                <label>{field}</label>
+                <input
+                  type="text"
+                  placeholder={`Digite: ${field}`}
+                  value={customFields[field]}
+                  onChange={e => setCustomFields({ ...customFields, [field]: e.target.value })}
+                />
+              </div>
+            ))}
+
+            <div className={styles.modalActions}>
+              <button
+                className={styles.btnCancelar}
+                onClick={() => setCustomModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className={styles.btnConfirmar}
+                onClick={handleCustomConfirm}
+              >
+                Confirmar
               </button>
             </div>
           </div>

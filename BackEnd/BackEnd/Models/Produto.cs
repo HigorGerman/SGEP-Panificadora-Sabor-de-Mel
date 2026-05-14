@@ -9,4 +9,6 @@ public class Produto {
     public string? ImagemUrl { get; set; }
     public string? Descricao { get; set; }
     public Receita? Receita { get; set; }
+    public bool PermiteCustomizacao { get; set; }
+    public string? TemplateCustomizacao { get; set; }
 }

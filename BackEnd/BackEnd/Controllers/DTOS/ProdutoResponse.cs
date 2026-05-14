@@ -12,4 +12,6 @@ public class ProdutoResponse
     public string? Ingredientes { get; set; }
     public string? ModoPreparo { get; set; }
     public string? Rendimento { get; set; }
+    public bool PermiteCustomizacao { get; set; }
+    public string? TemplateCustomizacao { get; set; }
 }
