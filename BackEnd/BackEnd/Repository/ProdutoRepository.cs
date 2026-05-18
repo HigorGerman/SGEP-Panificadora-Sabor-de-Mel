@@ -25,7 +25,10 @@ namespace BackEnd.Repository
                 ImagemUrl = dr.IsDBNull(dr.GetOrdinal("imagem_url")) ? null : dr.GetString(dr.GetOrdinal("imagem_url")),
                 Descricao = dr.IsDBNull(dr.GetOrdinal("descricao")) ? null : dr.GetString(dr.GetOrdinal("descricao")),
                 PermiteCustomizacao = dr.GetBoolean(dr.GetOrdinal("permite_customizacao")),
-                TemplateCustomizacao = dr.IsDBNull(dr.GetOrdinal("template_customizacao")) ? null : dr.GetString(dr.GetOrdinal("template_customizacao"))
+                TemplateCustomizacao = dr.IsDBNull(dr.GetOrdinal("template_customizacao")) ? null : dr.GetString(dr.GetOrdinal("template_customizacao")),
+                ContemGluten = dr.GetBoolean(dr.GetOrdinal("contem_gluten")),
+                ContemLactose = dr.GetBoolean(dr.GetOrdinal("contem_lactose")),
+                ContemAcucar = dr.GetBoolean(dr.GetOrdinal("contem_acucar"))
             };
         }
 
@@ -33,8 +36,8 @@ namespace BackEnd.Repository
         public bool Criar(Produto produto)
         {
             using var cmd = _context.GetConexao().CreateCommand();
-            cmd.CommandText = @"INSERT INTO produto (nome, preco_unitario, categoria_id, imagem_url, descricao, permite_customizacao, template_customizacao) 
-                        VALUES (@nome, @preco, @categoriaId, @img, @descricao, @permiteCustomizacao, CAST(@templateCustomizacao AS jsonb)) 
+            cmd.CommandText = @"INSERT INTO produto (nome, preco_unitario, categoria_id, imagem_url, descricao, permite_customizacao, template_customizacao, contem_gluten, contem_lactose, contem_acucar) 
+                        VALUES (@nome, @preco, @categoriaId, @img, @descricao, @permiteCustomizacao, CAST(@templateCustomizacao AS jsonb), @gluten, @lactose, @acucar) 
                         RETURNING id";
 
             cmd.Parameters.AddWithValue("@nome", produto.Nome);
@@ -44,6 +47,9 @@ namespace BackEnd.Repository
             cmd.Parameters.AddWithValue("@descricao", (object?)produto.Descricao ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@permiteCustomizacao", produto.PermiteCustomizacao);
             cmd.Parameters.AddWithValue("@templateCustomizacao", string.IsNullOrEmpty(produto.TemplateCustomizacao) ? DBNull.Value : (object)produto.TemplateCustomizacao);
+            cmd.Parameters.AddWithValue("@gluten", produto.ContemGluten);
+            cmd.Parameters.AddWithValue("@lactose", produto.ContemLactose);
+            cmd.Parameters.AddWithValue("@acucar", produto.ContemAcucar);
 
             produto.Id = (int)cmd.ExecuteScalar();
             return true;
@@ -87,13 +93,16 @@ namespace BackEnd.Repository
         {
             using var cmd = _context.GetConexao().CreateCommand();
             cmd.CommandText = @"UPDATE produto SET nome = @nome, preco_unitario = @preco, 
-                        categoria_id = @catId, descricao = @descricao, permite_customizacao = @permiteCustomizacao, template_customizacao = CAST(@templateCustomizacao AS jsonb) WHERE id = @id";
+                        categoria_id = @catId, descricao = @descricao, permite_customizacao = @permiteCustomizacao, template_customizacao = CAST(@templateCustomizacao AS jsonb), contem_gluten = @gluten, contem_lactose = @lactose, contem_acucar = @acucar WHERE id = @id";
             cmd.Parameters.AddWithValue("@nome", produto.Nome);
             cmd.Parameters.AddWithValue("@preco", produto.PrecoUnitario);
             cmd.Parameters.AddWithValue("@catId", produto.CategoriaId);
             cmd.Parameters.AddWithValue("@descricao", (object?)produto.Descricao ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@permiteCustomizacao", produto.PermiteCustomizacao);
             cmd.Parameters.AddWithValue("@templateCustomizacao", string.IsNullOrEmpty(produto.TemplateCustomizacao) ? DBNull.Value : (object)produto.TemplateCustomizacao);
+            cmd.Parameters.AddWithValue("@gluten", produto.ContemGluten);
+            cmd.Parameters.AddWithValue("@lactose", produto.ContemLactose);
+            cmd.Parameters.AddWithValue("@acucar", produto.ContemAcucar);
             cmd.Parameters.AddWithValue("@id", produto.Id);
             return cmd.ExecuteNonQuery() > 0;
         }

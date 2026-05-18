@@ -27,6 +27,11 @@ namespace BackEnd.Services
             return _repository.Alterar(cliente);
         }
 
+        public bool AlterarPerfil(Cliente cliente)
+        {
+            return _repository.AlterarPerfil(cliente);
+        }
+
         public bool Excluir(int id)
         {
             return _repository.Excluir(id);

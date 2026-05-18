@@ -42,7 +42,10 @@ namespace BackEnd.Controllers
                         Rendimento = request.Rendimento
                     },
                     PermiteCustomizacao = request.PermiteCustomizacao,
-                    TemplateCustomizacao = request.TemplateCustomizacao
+                    TemplateCustomizacao = request.TemplateCustomizacao,
+                    ContemGluten = request.ContemGluten,
+                    ContemLactose = request.ContemLactose,
+                    ContemAcucar = request.ContemAcucar
                 };
 
                 var ok = _services.Criar(produto);
@@ -69,7 +72,10 @@ namespace BackEnd.Controllers
                 ImagemUrl = p.ImagemUrl,
                 Descricao = p.Descricao,
                 PermiteCustomizacao = p.PermiteCustomizacao,
-                TemplateCustomizacao = p.TemplateCustomizacao
+                TemplateCustomizacao = p.TemplateCustomizacao,
+                ContemGluten = p.ContemGluten,
+                ContemLactose = p.ContemLactose,
+                ContemAcucar = p.ContemAcucar
             });
             return Ok(produtos);
         }
@@ -89,7 +95,10 @@ namespace BackEnd.Controllers
                 ModoPreparo = p.Receita?.ModoPreparo,
                 Rendimento = p.Receita?.Rendimento,
                 PermiteCustomizacao = p.PermiteCustomizacao,
-                TemplateCustomizacao = p.TemplateCustomizacao
+                TemplateCustomizacao = p.TemplateCustomizacao,
+                ContemGluten = p.ContemGluten,
+                ContemLactose = p.ContemLactose,
+                ContemAcucar = p.ContemAcucar
             });
             return Ok(produtos);
         }
@@ -111,7 +120,10 @@ namespace BackEnd.Controllers
                 ModoPreparo = produto.Receita?.ModoPreparo,
                 Rendimento = produto.Receita?.Rendimento,
                 PermiteCustomizacao = produto.PermiteCustomizacao,
-                TemplateCustomizacao = produto.TemplateCustomizacao
+                TemplateCustomizacao = produto.TemplateCustomizacao,
+                ContemGluten = produto.ContemGluten,
+                ContemLactose = produto.ContemLactose,
+                ContemAcucar = produto.ContemAcucar
             });
         }
 
@@ -132,7 +144,10 @@ namespace BackEnd.Controllers
                     Rendimento = request.Rendimento
                 },
                 PermiteCustomizacao = request.PermiteCustomizacao,
-                TemplateCustomizacao = request.TemplateCustomizacao
+                TemplateCustomizacao = request.TemplateCustomizacao,
+                ContemGluten = request.ContemGluten,
+                ContemLactose = request.ContemLactose,
+                ContemAcucar = request.ContemAcucar
             };
             return _services.Alterar(produto) ? Ok() : BadRequest();
         }

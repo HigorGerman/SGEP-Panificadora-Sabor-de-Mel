@@ -14,6 +14,17 @@ interface Produto {
   categoriaId?: number;
   permiteCustomizacao?: boolean;
   templateCustomizacao?: string;
+  contemGluten?: boolean;
+  contemLactose?: boolean;
+  contemAcucar?: boolean;
+}
+
+interface Cliente {
+  id: number;
+  nome: string;
+  restricaoGluten: boolean;
+  restricaoLactose: boolean;
+  restricaoAcucar: boolean;
 }
 
 interface CartItem {
@@ -28,6 +39,7 @@ export default function NovaEncomenda() {
   const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<{ id: number, descricao: string }[]>([]);
+  const [loggedClient, setLoggedClient] = useState<Cliente | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [quantidades, setQuantidades] = useState<Record<number, number>>({});
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -37,9 +49,15 @@ export default function NovaEncomenda() {
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [customModalOpen, setCustomModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
+  const [usuarioTipo, setUsuarioTipo] = useState<string | null>(null);
 
   // Custom fields
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
+
+  // Health Alert
+  const [healthAlertModalOpen, setHealthAlertModalOpen] = useState(false);
+  const [healthRiskMsg, setHealthRiskMsg] = useState('');
+  const [pendingProduct, setPendingProduct] = useState<Produto | null>(null);
 
   // Form fields
   const [dataEntrega, setDataEntrega] = useState('');
@@ -47,22 +65,36 @@ export default function NovaEncomenda() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setUsuarioTipo(localStorage.getItem('usuario_tipo'));
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const [resProd, resCat] = await Promise.all([
+      const tipo = localStorage.getItem('usuario_tipo');
+      const uId = localStorage.getItem('usuario_id');
+      
+      const reqs: Promise<any>[] = [
         api.get('/Produtos'),
         api.get('/Categorias')
-      ]);
+      ];
 
-      setProdutos(resProd.data);
-      setCategorias(resCat.data);
+      if (tipo === 'Cliente' && uId) {
+        reqs.push(api.get(`/Clientes/${uId}`).catch(() => ({ data: null })));
+      }
+
+      const results = await Promise.all(reqs);
+
+      setProdutos(results[0].data);
+      setCategorias(results[1].data);
+      
+      if (tipo === 'Cliente' && results[2]?.data) {
+        setLoggedClient(results[2].data);
+      }
 
       // Initialize quantities to 1
       const initialQuantities: Record<number, number> = {};
-      resProd.data.forEach((p: Produto) => {
+      results[0].data.forEach((p: Produto) => {
         initialQuantities[p.id] = 1;
       });
       setQuantidades(initialQuantities);
@@ -102,7 +134,7 @@ export default function NovaEncomenda() {
     });
   };
 
-  const handleAddClick = (produto: Produto) => {
+  const proceedToAdd = (produto: Produto) => {
     if (produto.permiteCustomizacao) {
       setSelectedProduct(produto);
       let initialFields: Record<string, string> = {};
@@ -120,6 +152,33 @@ export default function NovaEncomenda() {
       setCustomModalOpen(true);
     } else {
       addToCart(produto);
+    }
+  };
+
+  const handleAddClick = (produto: Produto) => {
+    // Only check constraints if the logged-in user is a Client with restrictions
+    if (loggedClient) {
+      let risks = [];
+      if (loggedClient.restricaoGluten && produto.contemGluten) risks.push("Glúten");
+      if (loggedClient.restricaoLactose && produto.contemLactose) risks.push("Lactose");
+      if (loggedClient.restricaoAcucar && produto.contemAcucar) risks.push("Açúcar");
+
+      if (risks.length > 0) {
+        setHealthRiskMsg(`Atenção: Você possui restrição a ${risks.join(' e ')} e este produto contém este(s) ingrediente(s). Deseja continuar?`);
+        setPendingProduct(produto);
+        setHealthAlertModalOpen(true);
+        return;
+      }
+    }
+
+    proceedToAdd(produto);
+  };
+
+  const handleHealthAlertConfirm = () => {
+    setHealthAlertModalOpen(false);
+    if (pendingProduct) {
+      proceedToAdd(pendingProduct);
+      setPendingProduct(null);
     }
   };
 
@@ -167,9 +226,11 @@ export default function NovaEncomenda() {
 
     setLoading(true);
     try {
+      const isClienteApp = tipo === 'Cliente';
+      
       const payload = {
-        clienteId: tipo === 'Cliente' ? parseInt(userId) : null,
-        usuarioId: tipo === 'Usuario' ? parseInt(userId) : null,
+        clienteId: isClienteApp ? parseInt(userId) : null,
+        usuarioId: !isClienteApp ? parseInt(userId) : null,
         dataEntrega: new Date(dataEntrega).toISOString(),
         observacao: observacao,
         itens: cart.map(item => ({
@@ -460,6 +521,38 @@ export default function NovaEncomenda() {
                 onClick={handleCustomConfirm}
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Alerta de Saúde (Restrições) */}
+      {healthAlertModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal} style={{ borderTop: '5px solid #e53e3e' }}>
+            <div className={styles.modalTitle} style={{ color: '#e53e3e', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.5rem' }}>⚠️</span> Alerta de Saúde
+            </div>
+            <p style={{ marginBottom: '20px', color: '#742a2a', backgroundColor: '#fff5f5', padding: '15px', borderRadius: '8px', fontWeight: 'bold' }}>
+              {healthRiskMsg}
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.btnCancelar}
+                onClick={() => {
+                  setHealthAlertModalOpen(false);
+                  setPendingProduct(null);
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                className={styles.btnConfirmar}
+                style={{ backgroundColor: '#e53e3e' }}
+                onClick={handleHealthAlertConfirm}
+              >
+                Sim, adicionar mesmo assim
               </button>
             </div>
           </div>

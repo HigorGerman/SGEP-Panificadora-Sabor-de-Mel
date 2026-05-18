@@ -16,6 +16,9 @@ interface Produto {
   rendimento?: string;
   permiteCustomizacao?: boolean;
   templateCustomizacao?: string;
+  contemGluten?: boolean;
+  contemLactose?: boolean;
+  contemAcucar?: boolean;
 }
 
 interface Categoria {
@@ -44,7 +47,10 @@ export default function ProdutosPage() {
     modoPreparo: '',
     rendimento: '',
     permiteCustomizacao: false,
-    templateCustomizacao: ''
+    templateCustomizacao: '',
+    contemGluten: true,
+    contemLactose: true,
+    contemAcucar: true
   });
 
   useEffect(() => {
@@ -87,7 +93,10 @@ export default function ProdutosPage() {
         ModoPreparo: novoProduto.modoPreparo,
         Rendimento: novoProduto.rendimento,
         PermiteCustomizacao: novoProduto.permiteCustomizacao,
-        TemplateCustomizacao: null as string | null
+        TemplateCustomizacao: null as string | null,
+        ContemGluten: novoProduto.contemGluten,
+        ContemLactose: novoProduto.contemLactose,
+        ContemAcucar: novoProduto.contemAcucar
       };
 
       if (novoProduto.permiteCustomizacao && novoProduto.templateCustomizacao) {
@@ -107,7 +116,7 @@ export default function ProdutosPage() {
       
       setIsModalOpen(false); // Fecha o modal
       setEditId(null);
-      setNovoProduto({ nome: '', precoUnitario: '', categoriaId: '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '', permiteCustomizacao: false, templateCustomizacao: '' }); // Limpa
+      setNovoProduto({ nome: '', precoUnitario: '', categoriaId: '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '', permiteCustomizacao: false, templateCustomizacao: '', contemGluten: true, contemLactose: true, contemAcucar: true }); // Limpa
       carregarProdutos(); // Recarrega a lista
     } catch (error) {
       alert("Erro ao salvar produto. Verifique os campos.");
@@ -138,7 +147,10 @@ export default function ProdutosPage() {
         modoPreparo: dados.modoPreparo || '',
         rendimento: dados.rendimento || '',
         permiteCustomizacao: dados.permiteCustomizacao || false,
-        templateCustomizacao: templateStr
+        templateCustomizacao: templateStr,
+        contemGluten: dados.contemGluten ?? true,
+        contemLactose: dados.contemLactose ?? true,
+        contemAcucar: dados.contemAcucar ?? true
       });
       setEditId(produto.id);
       setIsModalOpen(true);
@@ -183,7 +195,7 @@ export default function ProdutosPage() {
         {userRole === '0' && (
           <button className={styles.btnNovo} onClick={() => {
             setEditId(null);
-            setNovoProduto({ nome: '', precoUnitario: '', categoriaId: categorias.length > 0 ? categorias[0].id : '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '', permiteCustomizacao: false, templateCustomizacao: '' });
+            setNovoProduto({ nome: '', precoUnitario: '', categoriaId: categorias.length > 0 ? categorias[0].id : '', imagemUrl: '', descricao: '', ingredientes: '', modoPreparo: '', rendimento: '', permiteCustomizacao: false, templateCustomizacao: '', contemGluten: true, contemLactose: true, contemAcucar: true });
             setIsModalOpen(true);
           }}>
             + Novo Produto
@@ -295,6 +307,21 @@ export default function ProdutosPage() {
                   onChange={e => setNovoProduto({...novoProduto, imagemUrl: e.target.value})}
                   placeholder="https://link-da-imagem.com/foto.jpg"
                 />
+              </div>
+
+              <div style={{ display: 'flex', gap: '15px', marginTop: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input type="checkbox" id="chkGluten" checked={novoProduto.contemGluten} onChange={e => setNovoProduto({...novoProduto, contemGluten: e.target.checked})} />
+                  <label htmlFor="chkGluten" style={{ margin: 0 }}>Contém Glúten</label>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input type="checkbox" id="chkLactose" checked={novoProduto.contemLactose} onChange={e => setNovoProduto({...novoProduto, contemLactose: e.target.checked})} />
+                  <label htmlFor="chkLactose" style={{ margin: 0 }}>Contém Lactose</label>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input type="checkbox" id="chkAcucar" checked={novoProduto.contemAcucar} onChange={e => setNovoProduto({...novoProduto, contemAcucar: e.target.checked})} />
+                  <label htmlFor="chkAcucar" style={{ margin: 0 }}>Contém Açúcar</label>
+                </div>
               </div>
 
               <div className={styles.inputGroup} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

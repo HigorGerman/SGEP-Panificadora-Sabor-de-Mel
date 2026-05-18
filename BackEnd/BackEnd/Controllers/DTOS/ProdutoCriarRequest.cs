@@ -11,4 +11,7 @@ public class ProdutoCriarRequest
     public string? Rendimento { get; set; }
     public bool PermiteCustomizacao { get; set; }
     public string? TemplateCustomizacao { get; set; }
+    public bool ContemGluten { get; set; } = true;
+    public bool ContemLactose { get; set; } = true;
+    public bool ContemAcucar { get; set; } = true;
 }

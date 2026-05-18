@@ -153,6 +153,22 @@ namespace BackEnd.Repository
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        public bool AlterarPerfil(Cliente cliente)
+        {
+            using var cmd = _context.GetConexao().CreateCommand();
+            cmd.CommandText = @"UPDATE cliente SET nome = @nome, 
+                        telefone = @telefone, restricao_gluten = @gluten, 
+                        restricao_lactose = @lactose, restricao_acucar = @acucar 
+                        WHERE id = @id";
+            cmd.Parameters.AddWithValue("@nome", cliente.Nome);
+            cmd.Parameters.AddWithValue("@telefone", (object?)cliente.Telefone ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@gluten", cliente.RestricaoGluten);
+            cmd.Parameters.AddWithValue("@lactose", cliente.RestricaoLactose);
+            cmd.Parameters.AddWithValue("@acucar", cliente.RestricaoAcucar);
+            cmd.Parameters.AddWithValue("@id", cliente.Id);
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
         public bool Excluir(int id)
         {
             using var cmdCheck = _context.GetConexao().CreateCommand();
