@@ -1,8 +1,12 @@
 using BackEnd.Repository;
 using BackEnd.Services;
 using Scalar.AspNetCore;
+using MercadoPago.Config;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- Configuração do Mercado Pago ---
+MercadoPagoConfig.AccessToken = builder.Configuration["MercadoPago:AccessToken"];
 
 // --- Services (Configurações do Framework) ---
 builder.Services.AddControllers();

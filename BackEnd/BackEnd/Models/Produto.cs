@@ -6,7 +6,7 @@ public class Produto {
     public decimal PrecoUnitario { get; set; }
     public int CategoriaId { get; set; }
     public Categoria? Categoria { get; set; }
-    public string? ImagemUrl { get; set; }
+    public string? ImagemUrl { get; set; }  
     public string? Descricao { get; set; }
     public Receita? Receita { get; set; }
     public bool PermiteCustomizacao { get; set; }
