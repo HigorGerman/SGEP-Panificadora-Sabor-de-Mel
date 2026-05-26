@@ -13,7 +13,7 @@ SGEP é uma solução de software projetada para modernizar e agilizar o control
 
 O sistema é dividido em duas partes principais:
 
-*   **BackEnd**: API REST desenvolvida em **C# / .NET 10.0** utilizando Entity Framework Core, autenticação JWT, documentação interativa com Scalar, integração com banco de dados PostgreSQL e SDK oficial do Mercado Pago para pagamentos.
+*   **BackEnd**: API REST desenvolvida em **C# / .NET 10.0** utilizando ADO.NET puro (com Npgsql), autenticação JWT, documentação interativa com Scalar, integração com banco de dados PostgreSQL e SDK oficial do Mercado Pago para pagamentos.
 *   **FrontEnd**: Interface web interativa desenvolvida em **React / TypeScript / Node.js**.
 
 ---
