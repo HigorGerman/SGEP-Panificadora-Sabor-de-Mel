@@ -1,7 +1,8 @@
 "use client";
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaSearch, FaShoppingCart } from 'react-icons/fa';
+import { FaSearch, FaArrowRight, FaTimes, FaShieldAlt } from 'react-icons/fa';
 import api from '@/services/api';
 import styles from './catalogo.module.css';
 
@@ -11,423 +12,264 @@ interface Produto {
   precoUnitario: number;
   imagemUrl?: string;
   descricao?: string;
+  categoriaId?: number;
+  permiteCustomizacao?: boolean;
+  templateCustomizacao?: string;
+  contemGluten?: boolean;
+  contemLactose?: boolean;
+  contemAcucar?: boolean;
 }
 
-interface CartItem {
-  produtoId: number;
-  nome: string;
-  precoUnitario: number;
-  quantidade: number;
+interface Categoria {
+  id: number;
+  descricao: string;
+}
+
+export function getProductImageUrl(produto: Produto): string {
+  if (produto.imagemUrl && produto.imagemUrl.trim().length > 0) {
+    return produto.imagemUrl;
+  }
+  const nameLower = produto.nome.toLowerCase();
+  if (nameLower.includes('bolo')) {
+    return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&auto=format&fit=crop&q=80';
+  }
+  if (nameLower.includes('pao de queijo') || nameLower.includes('pão') || nameLower.includes('pao')) {
+    return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80';
+  }
+  if (nameLower.includes('brigadeiro') || nameLower.includes('carolina') || nameLower.includes('doce')) {
+    return 'https://images.unsplash.com/photo-1587314168485-3236d6710814?w=600&auto=format&fit=crop&q=80';
+  }
+  if (nameLower.includes('torta') || nameLower.includes('pie')) {
+    return 'https://images.unsplash.com/photo-1519869325930-281384150729?w=600&auto=format&fit=crop&q=80';
+  }
+  if (nameLower.includes('salgado') || nameLower.includes('coxinha') || nameLower.includes('empada')) {
+    return 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80';
 }
 
 export default function CatalogoPage() {
   const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Local state for the quantities selected in the inputs
-  const [quantidades, setQuantidades] = useState<Record<number, number>>({});
-  
-  // Cart state
-  const [cart, setCart] = useState<CartItem[]>([]);
-  
-  // Modals state
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedCategoria, setSelectedCategoria] = useState<number | null>(null);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
-
-  // Checkout form state
-  const [dataEntrega, setDataEntrega] = useState('');
-  const [observacao, setObservacao] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProdutos();
+    fetchData();
   }, []);
 
-  const fetchProdutos = async () => {
+  const fetchData = async () => {
     try {
-      const res = await api.get('/Produtos');
-      setProdutos(res.data);
-      
-      const initialQuantities: Record<number, number> = {};
-      res.data.forEach((p: Produto) => {
-        initialQuantities[p.id] = 1;
-      });
-      setQuantidades(initialQuantities);
+      setLoading(true);
+      const [resProdutos, resCategorias] = await Promise.all([
+        api.get('/Produtos'),
+        api.get('/Categorias').catch(() => ({ data: [] }))
+      ]);
+      setProdutos(resProdutos.data);
+      setCategorias(resCategorias.data);
     } catch (error) {
-      console.error("Erro ao buscar produtos:", error);
-    }
-  };
-
-  const handleQtyChange = (produtoId: number, delta: number) => {
-    setQuantidades(prev => {
-      const current = prev[produtoId] || 1;
-      const next = current + delta;
-      return { ...prev, [produtoId]: next > 0 ? next : 1 };
-    });
-  };
-
-  const addToCart = (produto: Produto) => {
-    const qty = quantidades[produto.id] || 1;
-    
-    setCart(prev => {
-      const existing = prev.find(item => item.produtoId === produto.id);
-      if (existing) {
-        return prev.map(item => 
-          item.produtoId === produto.id 
-            ? { ...item, quantidade: item.quantidade + qty }
-            : item
-        );
-      }
-      return [...prev, {
-        produtoId: produto.id,
-        nome: produto.nome,
-        precoUnitario: produto.precoUnitario,
-        quantidade: qty
-      }];
-    });
-
-    // Reset qty after adding
-    setQuantidades(prev => ({ ...prev, [produto.id]: 1 }));
-  };
-
-  const removeFromCart = (produtoId: number) => {
-    setCart(prev => prev.filter(item => item.produtoId !== produtoId));
-  };
-
-  const totalCartItems = cart.reduce((acc, item) => acc + item.quantidade, 0);
-  const totalCartPrice = cart.reduce((acc, item) => acc + (item.precoUnitario * item.quantidade), 0);
-
-  const filteredProdutos = produtos.filter(p => 
-    p.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleFinalizarResumo = () => {
-    setIsSummaryOpen(false);
-    const usuarioNome = localStorage.getItem('usuario_nome');
-    
-    if (!usuarioNome) {
-      setIsLoginModalOpen(true);
-    } else {
-      setIsCheckoutOpen(true);
-    }
-  };
-
-  const submitEncomenda = async () => {
-    const userId = localStorage.getItem('usuario_id');
-    const tipo = localStorage.getItem('usuario_tipo');
-
-    if (!userId) {
-      alert("Erro ao identificar cliente.");
-      return;
-    }
-
-    if (!dataEntrega) {
-      alert("Selecione uma data para entrega.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const payload = {
-        clienteId: tipo === 'Cliente' ? parseInt(userId) : null,
-        usuarioId: tipo === 'Usuario' ? parseInt(userId) : null,
-        dataEntrega: new Date(dataEntrega).toISOString(),
-        observacao: observacao,
-        itens: cart.map(item => ({
-          produtoId: item.produtoId,
-          quantidade: item.quantidade
-        }))
-      };
-
-      const res = await api.post('/api/Encomenda', payload);
-      if (res.status === 200 || res.status === 201) {
-        alert("Encomenda confirmada com sucesso!");
-        setCart([]);
-        setIsCheckoutOpen(false);
-        setDataEntrega('');
-        setObservacao('');
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Ocorreu um erro ao processar a encomenda.");
+      console.error("Erro ao carregar vitrine de produtos:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDateChange = (val: string) => {
-    if (!val) {
-      setDataEntrega('');
-      return;
-    }
-    const data = new Date(val);
-    const day = data.getDay(); // 0 is Sunday
-    const hours = data.getHours();
-    const minutes = data.getMinutes();
-
-    if (day === 0) {
-      alert("Devido ao alto movimento, não realizamos encomendas aos domingos.");
-      setDataEntrega('');
-      return;
-    }
-
-    if (hours < 8 || hours > 18 || (hours === 18 && minutes > 0)) {
-      alert("Horário permitido para retiradas: 08:00 às 18:00.");
-      setDataEntrega('');
-      return;
-    }
-
-    setDataEntrega(val);
+  const handleIrParaEncomenda = (produtoId: number) => {
+    router.push(`/nova-encomenda?produtoId=${produtoId}`);
   };
+
+  const filteredProdutos = produtos.filter(p => {
+    const term = searchTerm.toLowerCase();
+    const matchesName = p.nome.toLowerCase().includes(term);
+    const matchesDesc = p.descricao ? p.descricao.toLowerCase().includes(term) : false;
+    const matchesCategory = selectedCategoria === null || p.categoriaId === selectedCategoria;
+    
+    return (matchesName || matchesDesc) && matchesCategory;
+  });
 
   return (
     <div className={styles.container}>
       <div className={styles.contentWrapper}>
-        <h1 className={styles.pageTitle}>Nosso Catálogo</h1>
-
-        <div className={styles.searchContainer}>
-          <FaSearch className={styles.searchIcon} />
-          <input 
-            type="text" 
-            placeholder="Buscar delícias (ex: pão, bolo...)" 
-            className={styles.searchInput}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        
+        {/* Banner Hero */}
+        <div className={styles.heroHeader}>
+          <h1 className={styles.heroTitle}>Vitrine Digital Sabor de Mel</h1>
+          <p className={styles.heroSubtitle}>
+            Explore nossas receitas artesanais, pães fresquinhos e doces finos.
+            Selecione seus itens favoritos e monte sua encomenda personalizada!
+          </p>
         </div>
 
-        <div className={styles.productList}>
-          {filteredProdutos.map(produto => (
-            <div key={produto.id} className={styles.productCard}>
-              <div className={styles.cardLeft}>
-                <img 
-                  src={produto.imagemUrl || "https://placehold.co/150x150?text=SGEP"} 
-                  alt={produto.nome}
-                  className={styles.productImg}
-                  onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/150x150?text=SGEP" }}
-                />
-              </div>
-              
-              <div className={styles.cardCenter}>
-                <div className={styles.productName}>{produto.nome}</div>
-                {produto.descricao && (
-                  <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '8px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {produto.descricao}
+        {/* Filtros e Busca */}
+        <div className={styles.filterSection}>
+          <div className={styles.searchBar}>
+            <FaSearch className={styles.searchIcon} />
+            <input 
+              type="text" 
+              placeholder="Buscar por nome ou ingrediente (ex: pão, brigadeiro, ninho...)" 
+              className={styles.searchInput}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Abas de Categorias */}
+          <div className={styles.categoryPills}>
+            <button 
+              className={`${styles.pill} ${selectedCategoria === null ? styles.pillActive : ''}`}
+              onClick={() => setSelectedCategoria(null)}
+            >
+              Todos os Produtos ({produtos.length})
+            </button>
+            {categorias.map(cat => {
+              const count = produtos.filter(p => p.categoriaId === cat.id).length;
+              return (
+                <button 
+                  key={cat.id}
+                  className={`${styles.pill} ${selectedCategoria === cat.id ? styles.pillActive : ''}`}
+                  onClick={() => setSelectedCategoria(cat.id)}
+                >
+                  {cat.descricao} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Grid de Produtos (Vitrine) */}
+        {loading ? (
+          <div style={{ textAlign: 'center', color: '#7A1C31', padding: '60px 0', fontSize: '1.2rem', fontWeight: '600' }}>
+            Carregando vitrine de produtos...
+          </div>
+        ) : filteredProdutos.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#718096', padding: '60px 0', background: 'white', borderRadius: '16px' }}>
+            Nenhum produto encontrado.
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {filteredProdutos.map(produto => {
+              const imgUrl = getProductImageUrl(produto);
+              const isSemGluten = produto.contemGluten === false;
+              const isZeroLactose = produto.contemLactose === false;
+              const isSemAcucar = produto.contemAcucar === false;
+              const isCustom = produto.permiteCustomizacao;
+
+              return (
+                <div key={produto.id} className={styles.card}>
+                  <div className={styles.imageWrapper} onClick={() => setSelectedProduto(produto)} style={{ cursor: 'pointer' }}>
+                    <img 
+                      src={imgUrl} 
+                      alt={produto.nome}
+                      className={styles.cardImg}
+                    />
+                    
+                    {/* Badges Alimentares */}
+                    <div className={styles.badgeContainer}>
+                      {isCustom && <span className={`${styles.badge}`} style={{ background: '#7A1C31', color: 'white' }}>Personalizável</span>}
+                      {isSemGluten && <span className={`${styles.badge} ${styles.badgeGlutenFree}`}>Sem Glúten</span>}
+                      {isZeroLactose && <span className={`${styles.badge} ${styles.badgeLactoseFree}`}>Zero Lactose</span>}
+                      {isSemAcucar && <span className={`${styles.badge} ${styles.badgeSugarFree}`}>Sem Açúcar</span>}
+                    </div>
                   </div>
-                )}
-                <div className={styles.productPrice}>
-                  R$ {produto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-                <button 
-                  style={{ background: 'transparent', border: 'none', color: '#5B0A1A', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.8rem', padding: 0, marginTop: '5px' }}
-                  onClick={() => setSelectedProduto(produto)}
-                >
-                  Ver Mais
-                </button>
-              </div>
 
-              <div className={styles.cardRight}>
-                <div className={styles.qtyControl}>
-                  <button className={styles.qtyBtn} onClick={() => handleQtyChange(produto.id, -1)}>-</button>
-                  <div className={styles.qtyDisplay}>{quantidades[produto.id] || 1}</div>
-                  <button className={styles.qtyBtn} onClick={() => handleQtyChange(produto.id, 1)}>+</button>
+                  <div className={styles.cardContent}>
+                    <h3 className={styles.cardTitle} onClick={() => setSelectedProduto(produto)} style={{ cursor: 'pointer' }}>
+                      {produto.nome}
+                    </h3>
+                    <p className={styles.cardDesc}>
+                      {produto.descricao || "Deliciosa receita artesanal preparada diariamente com ingredientes selecionados na Panificadora Sabor de Mel."}
+                    </p>
+
+                    <div className={styles.cardFooter}>
+                      <div className={styles.cardPrice}>
+                        R$ {produto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+
+                      <button 
+                        className={styles.btnOrder}
+                        onClick={() => handleIrParaEncomenda(produto.id)}
+                      >
+                        Encomendar <FaArrowRight style={{ fontSize: '0.8rem' }} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button 
-                  className={styles.btnAdd}
-                  onClick={() => addToCart(produto)}
-                >
-                  Adicionar
-                </button>
-              </div>
-            </div>
-          ))}
-          {filteredProdutos.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#a0aec0', padding: '40px' }}>
-              Nenhum produto encontrado.
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* FLOATING CART BAR */}
-      {cart.length > 0 && (
-        <div className={styles.floatingCart}>
-          <div className={styles.cartInfo}>
-            <div className={styles.cartIconWrapper}>
-              <FaShoppingCart />
-            </div>
-            <div className={styles.cartText}>
-              <span className={styles.cartItemsCount}>
-                Itens no carrinho: {totalCartItems}
-              </span>
-              <span className={styles.cartTotal}>
-                Total: R$ {totalCartPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-          <button className={styles.btnOpenCart} onClick={() => setIsSummaryOpen(true)}>
-            Ver Pedido
-          </button>
-        </div>
-      )}
-
-      {/* MODAL DE RESUMO DO CARRINHO */}
-      {isSummaryOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h2 className={styles.modalTitle}>Seu Pedido</h2>
-            <div className={styles.cartList}>
-              {cart.map(item => (
-                <div key={item.produtoId} className={styles.cartListItem}>
-                  <div className={styles.cartListItemName}>
-                    {item.quantidade}x {item.nome}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span className={styles.cartListItemPrice}>
-                      R$ {(item.precoUnitario * item.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                    <button className={styles.cartListItemRemove} onClick={() => removeFromCart(item.produtoId)}>X</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.4rem', fontWeight: '900', color: '#5B0A1A', marginBottom: '30px' }}>
-              <span>Total:</span>
-              <span>R$ {totalCartPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-            </div>
-            
-            <div className={styles.modalActionsRow}>
-              <button className={styles.btnSecondary} onClick={() => setIsSummaryOpen(false)}>
-                Continuar Comprando
-              </button>
-              <button className={styles.btnPrimary} onClick={handleFinalizarResumo}>
-                Finalizar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE LOGIN REQUERIDO */}
-      {isLoginModalOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h2 className={styles.modalTitle}>Falta pouco!</h2>
-            <p className={styles.modalSubtitle}>
-              Entre na sua conta para concluir a encomenda e garantir suas delícias.
-            </p>
-            <div className={styles.modalActions}>
-              <button className={styles.btnPrimary} onClick={() => router.push('/login')}>
-                Fazer Login
-              </button>
-              <button className={styles.btnOutline} onClick={() => router.push('/registro')}>
-                Criar Nova Conta
-              </button>
-              <button className={styles.btnSecondary} onClick={() => setIsLoginModalOpen(false)} style={{ marginTop: '10px' }}>
-                Voltar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE CHECKOUT FINAL (SE LOGADO) */}
-      {isCheckoutOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h2 className={styles.modalTitle}>Confirmar Entrega</h2>
-            
-            <div className={styles.inputGroup}>
-              <label>Data e Hora da Retirada/Entrega</label>
-              <input 
-                type="datetime-local" 
-                value={dataEntrega}
-                min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
-                onChange={(e) => handleDateChange(e.target.value)}
-                required
-              />
-              <small style={{ color: '#e53e3e', marginTop: '5px', fontWeight: 'bold' }}>
-                * Pedidos devem ser feitos com no mínimo 24h de antecedência.
-              </small>
-            </div>
-            
-            <div className={styles.inputGroup}>
-              <label>Observação (Opcional)</label>
-              <textarea 
-                rows={3}
-                placeholder="Ex: Pães bem assados..."
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-              />
-            </div>
-
-            <div style={{ backgroundColor: '#fff5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #feb2b2', textAlign: 'left' }}>
-              <span style={{ color: '#5B0A1A', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                ℹ️ O pagamento será realizado diretamente no balcão da Padaria Sabor no momento da retirada.
-              </span>
-            </div>
-
-            <div className={styles.modalActionsRow}>
-              <button 
-                className={styles.btnSecondary} 
-                onClick={() => setIsCheckoutOpen(false)}
-                disabled={loading}
-              >
-                Voltar
-              </button>
-              <button 
-                className={styles.btnPrimary}
-                onClick={submitEncomenda}
-                disabled={loading}
-              >
-                {loading ? 'Confirmando...' : 'Confirmar Encomenda'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE DETALHES DO PRODUTO (VER MAIS) */}
+      {/* Modal de Detalhes do Produto */}
       {selectedProduto && (
         <div className={styles.modalOverlay} onClick={() => setSelectedProduto(null)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '0', overflow: 'hidden', position: 'relative' }}>
-            <img 
-              src={selectedProduto.imagemUrl || "https://placehold.co/500x300?text=SGEP"} 
-              alt={selectedProduto.nome} 
-              style={{ width: '100%', height: '280px', objectFit: 'cover', display: 'block' }}
-              onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/500x300?text=SGEP" }}
-            />
-            <div style={{ padding: '25px' }}>
-              <h2 className={styles.modalTitle} style={{ marginBottom: '10px', fontSize: '1.8rem' }}>{selectedProduto.nome}</h2>
-              <p style={{ fontSize: '1.6rem', color: '#5B0A1A', fontWeight: 'bold', marginBottom: '15px' }}>
-                R$ {selectedProduto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-              <div style={{ color: '#4a5568', lineHeight: '1.6', fontSize: '1.1rem', marginBottom: '30px', whiteSpace: 'pre-wrap' }}>
-                {selectedProduto.descricao || 'Este produto não possui uma descrição detalhada ainda.'}
-              </div>
-              <button 
-                className={styles.btnPrimary} 
-                style={{ width: '100%', padding: '15px', fontSize: '1.1rem' }}
-                onClick={() => {
-                  addToCart(selectedProduto);
-                  setSelectedProduto(null);
-                  setIsSummaryOpen(true);
-                }}
-              >
-                Adicionar ao Carrinho
-              </button>
-            </div>
-            <button 
-              onClick={() => setSelectedProduto(null)}
-              style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '35px', height: '35px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', transition: 'background 0.2s' }}
-              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.8)'}
-              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.5)'}
-            >
-              &times;
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <button className={styles.modalCloseBtn} onClick={() => setSelectedProduto(null)}>
+              <FaTimes />
             </button>
+
+            <img 
+              src={getProductImageUrl(selectedProduto)} 
+              alt={selectedProduto.nome} 
+              className={styles.modalImg}
+            />
+
+            <div className={styles.modalBody}>
+              <h2 style={{ fontSize: '1.7rem', fontWeight: '800', color: '#1A202C', marginBottom: '8px' }}>
+                {selectedProduto.nome}
+              </h2>
+
+              {/* Informações de Alérgenos e Customização */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
+                {selectedProduto.permiteCustomizacao && (
+                  <span style={{ fontSize: '0.75rem', background: '#7A1C31', color: 'white', padding: '4px 10px', borderRadius: '50px', fontWeight: '700' }}>⭐ Aceita Especificações / Personalização</span>
+                )}
+
+                {selectedProduto.contemGluten === false ? (
+                  <span className={`${styles.badge} ${styles.badgeGlutenFree}`}>Sem Glúten</span>
+                ) : (
+                  <span style={{ fontSize: '0.75rem', background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '50px', fontWeight: '600' }}>Contém Glúten</span>
+                )}
+
+                {selectedProduto.contemLactose === false ? (
+                  <span className={`${styles.badge} ${styles.badgeLactoseFree}`}>Zero Lactose</span>
+                ) : (
+                  <span style={{ fontSize: '0.75rem', background: '#DBEAFE', color: '#1E40AF', padding: '4px 10px', borderRadius: '50px', fontWeight: '600' }}>Contém Lactose</span>
+                )}
+
+                {selectedProduto.contemAcucar === false ? (
+                  <span className={`${styles.badge} ${styles.badgeSugarFree}`}>Sem Açúcar</span>
+                ) : (
+                  <span style={{ fontSize: '0.75rem', background: '#F3E8FF', color: '#6B21A8', padding: '4px 10px', borderRadius: '50px', fontWeight: '600' }}>Contém Açúcar</span>
+                )}
+              </div>
+
+              <p style={{ color: '#4A5568', lineHeight: '1.6', fontSize: '1rem', marginBottom: '25px' }}>
+                {selectedProduto.descricao || "Produto artesanal feito com rigoroso padrão de qualidade da Panificadora Sabor de Mel."}
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <span style={{ fontSize: '0.85rem', color: '#718096', display: 'block' }}>Preço Unitário</span>
+                  <span style={{ fontSize: '1.6rem', fontWeight: '900', color: '#7A1C31' }}>
+                    R$ {selectedProduto.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <button 
+                  className={styles.btnOrder} 
+                  style={{ padding: '14px 28px', fontSize: '1.05rem' }}
+                  onClick={() => {
+                    handleIrParaEncomenda(selectedProduto.id);
+                  }}
+                >
+                  Fazer Encomenda <FaArrowRight />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

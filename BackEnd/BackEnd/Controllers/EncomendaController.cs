@@ -38,7 +38,7 @@ namespace BackEnd.Controllers
 
                 var sucesso = _encomendaServices.Criar(encomenda);
                 if (sucesso)
-                    return Ok(new { message = "Encomenda criada com sucesso!" });
+                    return Ok(new { message = "Encomenda criada com sucesso!", id = encomenda.Id });
 
                 return BadRequest(new { message = "Erro ao criar encomenda." });
             }

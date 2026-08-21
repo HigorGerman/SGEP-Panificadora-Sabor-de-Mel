@@ -58,6 +58,7 @@ builder.Services.AddScoped<ProdutoRepository>();
 builder.Services.AddScoped<EncomendaRepository>();
 builder.Services.AddScoped<CategoriaRepository>();
 builder.Services.AddScoped<ReceitaRepository>();
+builder.Services.AddScoped<IPagamentoRepository, PagamentoRepository>();
 
 // --- Injeção de Dependência (Services) ---
 builder.Services.AddScoped<UsuarioServices>();
@@ -66,6 +67,7 @@ builder.Services.AddScoped<ProdutoServices>();
 builder.Services.AddScoped<EncomendaServices>();
 builder.Services.AddScoped<CategoriaService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<IPagamentoService, PagamentoService>();
 
 var app = builder.Build();
 

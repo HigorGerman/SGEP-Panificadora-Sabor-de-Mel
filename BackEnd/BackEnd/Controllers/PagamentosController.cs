@@ -1,13 +1,13 @@
-using BackEnd.Controllers.DTOS;
-using Microsoft.AspNetCore.Mvc;
-using MercadoPago.Client.Payment;
-using MercadoPago.Client.Common;
-using MercadoPago.Resource.Payment;
-using MercadoPago.Error;
-using System.Threading.Tasks;
-using System.Diagnostics;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+using BackEnd.Controllers.DTOS;
+using BackEnd.Services;
+using MercadoPago.Client.Common;
+using MercadoPago.Client.Payment;
+using MercadoPago.Error;
+using MercadoPago.Resource.Payment;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BackEnd.Controllers
 {
@@ -15,15 +15,123 @@ namespace BackEnd.Controllers
     [Route("api/[controller]")]
     public class PagamentosController : ControllerBase
     {
+        private readonly IPagamentoService _pagamentoService;
+
+        public PagamentosController(IPagamentoService pagamentoService)
+        {
+            _pagamentoService = pagamentoService;
+        }
+
+        /// <summary>
+        /// Endpoint para gerar preferência de pagamento no Mercado Pago (Checkout Pro - Pix/Cartão Crédito/Débito)
+        /// </summary>
+        [HttpPost("gerar-preferencia")]
+        public async Task<IActionResult> GerarPreferencia([FromBody] GerarPreferenciaRequestDTO request)
+        {
+            try
+            {
+                var response = await _pagamentoService.GerarPreferenciaAsync(request);
+                return Ok(response);
+            }
+            catch (ArgumentException argEx)
+            {
+                return NotFound(new { erro = argEx.Message });
+            }
+            catch (MercadoPagoApiException apiEx)
+            {
+                Console.WriteLine($"Erro API Mercado Pago: {apiEx.StatusCode} - {apiEx.Message}");
+                return StatusCode(500, new { erro = "Erro na API do Mercado Pago ao gerar preferência", detalhe = apiEx.Message });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao gerar preferência de pagamento: {ex.Message}");
+                return StatusCode(500, new { erro = "Erro ao gerar preferência de pagamento", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Endpoint Webhook para capturar notificações automáticas de status de pagamento do Mercado Pago
+        /// </summary>
+        [HttpPost("webhook")]
+        public async Task<IActionResult> Webhook(
+            [FromQuery] string? type,
+            [FromQuery] string? topic,
+            [FromQuery(Name = "data.id")] string? dataId,
+            [FromQuery] string? id,
+            [FromBody] MercadoPagoWebhookNotification? notification)
+        {
+            try
+            {
+                string targetType = type ?? topic ?? notification?.Type ?? notification?.Action ?? "payment";
+                string targetDataId = dataId ?? notification?.Data?.Id ?? notification?.Id?.ToString() ?? id ?? string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(targetDataId))
+                {
+                    await _pagamentoService.ProcessarWebhookMercadoPagoAsync(targetType, targetDataId);
+                }
+
+                // O Mercado Pago exige resposta HTTP 200/201 OK para confirmar recebimento do webhook
+                return Ok(new { status = "recebido" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao processar Webhook do Mercado Pago: {ex.Message}");
+                return Ok(new { status = "erro_processamento", mensagem = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Consulta a situação financeira/pagamento de uma encomenda específica
+        /// </summary>
+        [HttpGet("encomenda/{encomendaId:int}")]
+        public IActionResult ObterPorEncomendaId(int encomendaId)
+        {
+            try
+            {
+                var pagamento = _pagamentoService.ObterPorEncomendaId(encomendaId);
+                if (pagamento == null)
+                {
+                    return NotFound(new { mensagem = "Nenhum registro de pagamento encontrado para esta encomenda." });
+                }
+                return Ok(pagamento);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao obter status do pagamento", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Endpoint para registrar o compromisso de pagamento presencial na retirada (Balcão da panificadora)
+        /// </summary>
+        [HttpPost("registrar-presencial")]
+        public IActionResult RegistrarPresencial([FromBody] RegistrarPresencialRequestDTO request)
+        {
+            try
+            {
+                var sucesso = _pagamentoService.RegistrarPagamentoPresencial(request.EncomendaId, request.FormaPagamento ?? "A combinar / Balcão");
+                if (sucesso)
+                {
+                    return Ok(new { mensagem = "Registro de pagamento presencial gravado com sucesso." });
+                }
+                return BadRequest(new { erro = "Não foi possível registrar o pagamento presencial." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao registrar pagamento presencial", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Endpoint legado/teste para gerar cobrança Pix isolada
+        /// </summary>
         [HttpPost("teste-pix")]
         public async Task<IActionResult> TestePix([FromBody] PixPaymentRequestDTO request)
         {
             try
             {
-                // Instanciar o cliente de pagamento do Mercado Pago
                 var client = new PaymentClient();
 
-                // Montar a requisição com o Payer completo exigido pela API do Mercado Pago
                 var paymentRequest = new PaymentCreateRequest
                 {
                     TransactionAmount = request.Valor,
@@ -42,12 +150,9 @@ namespace BackEnd.Controllers
                     }
                 };
 
-                // Opcional: Adicionar cabeçalho de idempotência recomendado para evitar duplicidade
                 var requestOptions = new MercadoPago.Client.RequestOptions();
                 requestOptions.CustomHeaders.Add("X-Idempotency-Key", Guid.NewGuid().ToString());
 
-                // Enviar a requisição ao Mercado Pago garantindo cultura invariante
-                // para evitar problemas de conversão de ponto/vírgula na serialização de decimais do SDK.
                 var originalCulture = System.Globalization.CultureInfo.CurrentCulture;
                 var originalUiCulture = System.Globalization.CultureInfo.CurrentUICulture;
                 Payment payment;
@@ -69,12 +174,10 @@ namespace BackEnd.Controllers
                     return BadRequest("Não foi possível gerar o pagamento no Mercado Pago.");
                 }
 
-                // Extrair as informações do QR Code do PointOfInteraction.TransactionData
                 var qrCode = payment.PointOfInteraction?.TransactionData?.QrCode;
                 var qrCodeBase64 = payment.PointOfInteraction?.TransactionData?.QrCodeBase64;
                 var paymentId = payment.Id ?? 0;
 
-                // Montar o DTO de retorno
                 var response = new PixPaymentResponseDTO
                 {
                     CopyAndPaste = qrCode,
@@ -86,26 +189,10 @@ namespace BackEnd.Controllers
             }
             catch (MercadoPagoApiException apiEx)
             {
-                // Erro específico da API do Mercado Pago
-                Console.WriteLine("Erro da API do Mercado Pago:");
-                Console.WriteLine($"Status Code: {apiEx.StatusCode}");
-                Console.WriteLine($"Erro: {apiEx.Message}");
-                if (apiEx.ApiError != null)
-                {
-                    Console.WriteLine($"Erro Detalhado: {apiEx.ApiError.Message}");
-                    if (apiEx.ApiError.Cause != null)
-                    {
-                        var causes = string.Join(", ", apiEx.ApiError.Cause.Select(c => $"[{c.Code}] {c.Description}"));
-                        Console.WriteLine($"Erros da API (Causas): {causes}");
-                    }
-                }
                 return StatusCode(500, new { erro = "Erro na API do Mercado Pago ao processar o Pix", detalhe = apiEx.Message });
             }
             catch (Exception ex)
             {
-                // Outro erro genérico
-                Console.WriteLine($"Erro genérico ao processar pagamento Pix: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
                 return StatusCode(500, new { erro = "Erro inesperado ao gerar pagamento Pix", detalhe = ex.Message });
             }
         }

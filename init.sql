@@ -111,11 +111,15 @@ CREATE TABLE pagamento (
     id SERIAL PRIMARY KEY,
     encomenda_id INTEGER NOT NULL REFERENCES encomenda(id) ON DELETE CASCADE,
     caixa_id INTEGER REFERENCES caixa(id),
-    valor_sinal NUMERIC(10, 2),
-    saldo_devedor NUMERIC(10, 2),
+    valor_total NUMERIC(10, 2) DEFAULT 0.00,
+    valor_sinal NUMERIC(10, 2) DEFAULT 0.00,
+    saldo_devedor NUMERIC(10, 2) DEFAULT 0.00,
     forma_pagamento_sinal VARCHAR(100),
     status VARCHAR(50) NOT NULL DEFAULT 'pendente', -- 'pendente', 'pago', 'sinal_pago', 'cancelado'
-    forma_pagamento VARCHAR(100) DEFAULT 'Não informada'
+    forma_pagamento VARCHAR(100) DEFAULT 'Não informada',
+    preference_id VARCHAR(255),
+    mp_payment_id BIGINT,
+    data_criacao TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
 );
 
 -- ==============================================================================
