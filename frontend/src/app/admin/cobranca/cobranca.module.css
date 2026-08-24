@@ -1,0 +1,456 @@
+.container {
+  min-height: 100vh;
+  background-color: #FAF6F0;
+  padding: 30px 24px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #2D3748;
+}
+
+.header {
+  max-width: 1200px;
+  margin: 0 auto 25px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.titleBox h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #7A1C31;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.titleBox p {
+  color: #718096;
+  font-size: 0.95rem;
+}
+
+/* Stats Counter Pill */
+.statsPill {
+  background: white;
+  padding: 10px 20px;
+  border-radius: 50px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  font-weight: 700;
+  color: #7A1C31;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #E2E8F0;
+}
+
+/* Search Bar */
+.searchWrapper {
+  max-width: 1200px;
+  margin: 0 auto 25px auto;
+  display: flex;
+  gap: 15px;
+}
+
+.searchBar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 14px;
+  padding: 14px 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.searchBar:focus-within {
+  border-color: #7A1C31;
+}
+
+.searchIcon {
+  color: #A0AEC0;
+  margin-right: 12px;
+  font-size: 1.2rem;
+}
+
+.searchInput {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 1.05rem;
+  color: #2D3748;
+}
+
+/* Grid of Order Cards */
+.grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #E2E8F0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Card Top Ribbon Header */
+.cardHeader {
+  background: #7A1C31;
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.orderId {
+  font-size: 1.2rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.pickupTime {
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Card Body */
+.cardBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
+}
+
+.clientInfo {
+  background: #FAF6F0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clientName {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #2D3748;
+}
+
+.clientMeta {
+  font-size: 0.85rem;
+  color: #718096;
+  display: flex;
+  gap: 12px;
+}
+
+/* Items List */
+.itemsSectionTitle {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #A0AEC0;
+  letter-spacing: 0.5px;
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #EDF2F7;
+}
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemName {
+  font-weight: 700;
+  color: #2D3748;
+}
+
+.itemSpecs {
+  font-size: 0.78rem;
+  color: #7A1C31;
+  background: #FFF5F5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+.itemPrice {
+  font-weight: 600;
+  color: #4A5568;
+}
+
+.obsBox {
+  background: #FFFBEB;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Highlighting Saldo Devedor Box */
+.saldoBox {
+  background: #FEF2F2;
+  border: 2px solid #FCA5A5;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.saldoLabel {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #991B1B;
+}
+
+.saldoValue {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #DC2626;
+}
+
+/* Card Action Footer */
+.cardFooter {
+  padding: 16px 20px;
+  background: #FAF6F0;
+  border-top: 1px solid #EDF2F7;
+}
+
+.btnLiquidar {
+  width: 100%;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btnLiquidar:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Empty State */
+.emptyState {
+  grid-column: 1 / -1;
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  color: #A0AEC0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.emptyState h3 {
+  font-size: 1.3rem;
+  color: #4A5568;
+  margin: 15px 0 6px 0;
+}
+
+/* Modal Overlay & Card */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 300;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 24px;
+  padding: 30px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #7A1C31;
+}
+
+.closeBtn {
+  background: #EDF2F7;
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Payment Method Grid Selector in Modal */
+.paymentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.paymentCard {
+  border: 2px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #FAF6F0;
+  text-align: center;
+}
+
+.paymentCard:hover {
+  border-color: #CBD5E0;
+  background: white;
+}
+
+.paymentCardSelected {
+  border-color: #10B981 !important;
+  background: #ECFDF5 !important;
+  color: #065F46 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.paymentCardIcon {
+  font-size: 1.6rem;
+}
+
+.paymentCardLabel {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+/* Modal Actions */
+.modalActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btnCancel {
+  flex: 1;
+  background: #EDF2F7;
+  color: #4A5568;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnConfirm {
+  flex: 2;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Toast Banner Container */
+.toastContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toastSuccess {
+  background: #10B981;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 14px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: fadeInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
+}

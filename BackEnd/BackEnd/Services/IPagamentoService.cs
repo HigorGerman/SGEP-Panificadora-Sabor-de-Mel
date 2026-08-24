@@ -13,5 +13,6 @@ namespace BackEnd.Services
         Pagamento? ObterPorEncomendaId(int encomendaId);
         bool LiquidarSaldo(int encomendaId, string formaPagamento, int? caixaId = null);
         bool RegistrarPagamentoPresencial(int encomendaId, string formaPagamento = "A combinar / Balcão");
+        System.Collections.Generic.List<PagamentoPendenteDTO> ObterPendentesRetirada();
     }
 }

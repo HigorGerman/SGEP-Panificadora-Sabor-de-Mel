@@ -213,7 +213,21 @@ namespace BackEnd.Services
 
         public bool LiquidarSaldo(int encomendaId, string formaPagamento, int? caixaId = null)
         {
-            return _pagamentoRepository.LiquidarSaldo(encomendaId, formaPagamento, caixaId);
+            var sucesso = _pagamentoRepository.LiquidarSaldo(encomendaId, formaPagamento, caixaId);
+            if (sucesso)
+            {
+                var encomenda = _encomendaRepository.ObterPorId(encomendaId);
+                if (encomenda != null && encomenda.Status < Encomenda.StatusEnum.Concluida)
+                {
+                    _encomendaRepository.AtualizarStatus(encomendaId, Encomenda.StatusEnum.Concluida);
+                }
+            }
+            return sucesso;
+        }
+
+        public List<PagamentoPendenteDTO> ObterPendentesRetirada()
+        {
+            return _pagamentoRepository.ObterPendentesRetirada();
         }
 
         public bool RegistrarPagamentoPresencial(int encomendaId, string formaPagamento = "A combinar / Balcão")

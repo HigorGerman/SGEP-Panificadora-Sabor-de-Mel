@@ -229,6 +229,84 @@ namespace BackEnd.Repository
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        public List<BackEnd.Controllers.DTOS.PagamentoPendenteDTO> ObterPendentesRetirada()
+        {
+            GarantirTabelaExiste();
+            var lista = new List<BackEnd.Controllers.DTOS.PagamentoPendenteDTO>();
+            var conexao = _context.GetConexao();
+
+            using var cmd = conexao.CreateCommand();
+            cmd.CommandText = @"
+                SELECT 
+                    e.id as encomenda_id,
+                    e.cliente_id,
+                    COALESCE(c.nome, u.usuario_nome, 'Cliente Avulso') as cliente_nome,
+                    COALESCE(c.cpf, 'Não informado') as cliente_cpf,
+                    COALESCE(c.telefone, '') as cliente_telefone,
+                    e.data_retirada,
+                    e.valor_total,
+                    COALESCE(p.saldo_devedor, e.valor_total) as saldo_devedor,
+                    COALESCE(p.status, 'pendente') as status_pagamento,
+                    COALESCE(p.forma_pagamento, 'A combinar / Balcão') as forma_pagamento,
+                    e.observacao
+                FROM encomenda e
+                LEFT JOIN cliente c ON e.cliente_id = c.id
+                LEFT JOIN usuario u ON e.usuario_id = u.id
+                LEFT JOIN pagamento p ON p.encomenda_id = e.id
+                WHERE (p.status IS NULL OR p.status = 'pendente' OR p.status = 'sinal_pago' OR COALESCE(p.saldo_devedor, e.valor_total) > 0)
+                  AND e.status_enum != 3
+                ORDER BY e.data_retirada ASC";
+
+            using (var dr = cmd.ExecuteReader())
+            {
+                while (dr.Read())
+                {
+                    var item = new BackEnd.Controllers.DTOS.PagamentoPendenteDTO
+                    {
+                        EncomendaId = dr.GetInt32(dr.GetOrdinal("encomenda_id")),
+                        ClienteId = dr.IsDBNull(dr.GetOrdinal("cliente_id")) ? null : dr.GetInt32(dr.GetOrdinal("cliente_id")),
+                        ClienteNome = dr.IsDBNull(dr.GetOrdinal("cliente_nome")) ? "Cliente Avulso" : dr.GetString(dr.GetOrdinal("cliente_nome")),
+                        ClienteCpf = dr.IsDBNull(dr.GetOrdinal("cliente_cpf")) ? "Não informado" : dr.GetString(dr.GetOrdinal("cliente_cpf")),
+                        ClienteTelefone = dr.IsDBNull(dr.GetOrdinal("cliente_telefone")) ? "" : dr.GetString(dr.GetOrdinal("cliente_telefone")),
+                        DataRetirada = dr.GetDateTime(dr.GetOrdinal("data_retirada")),
+                        ValorTotal = dr.GetDecimal(dr.GetOrdinal("valor_total")),
+                        SaldoDevedor = dr.GetDecimal(dr.GetOrdinal("saldo_devedor")),
+                        StatusPagamento = dr.GetString(dr.GetOrdinal("status_pagamento")),
+                        FormaPagamento = dr.GetString(dr.GetOrdinal("forma_pagamento")),
+                        Observacao = dr.IsDBNull(dr.GetOrdinal("observacao")) ? null : dr.GetString(dr.GetOrdinal("observacao"))
+                    };
+                    lista.Add(item);
+                }
+            }
+
+            // Buscar itens de cada encomenda pendente
+            foreach (var dto in lista)
+            {
+                using var cmdItens = conexao.CreateCommand();
+                cmdItens.CommandText = @"
+                    SELECT ie.produto_id, pr.nome as produto_nome, ie.quantidade, ie.preco_no_ato as preco_unitario, ie.especificacoes_tecnicas
+                    FROM item_encomenda ie
+                    JOIN produto pr ON ie.produto_id = pr.id
+                    WHERE ie.encomenda_id = @encId";
+                cmdItens.Parameters.AddWithValue("@encId", dto.EncomendaId);
+
+                using var drItens = cmdItens.ExecuteReader();
+                while (drItens.Read())
+                {
+                    dto.Itens.Add(new BackEnd.Controllers.DTOS.ItemPendenteDTO
+                    {
+                        ProdutoId = drItens.GetInt32(drItens.GetOrdinal("produto_id")),
+                        ProdutoNome = drItens.GetString(drItens.GetOrdinal("produto_nome")),
+                        Quantidade = drItens.GetInt32(drItens.GetOrdinal("quantidade")),
+                        PrecoUnitario = drItens.GetDecimal(drItens.GetOrdinal("preco_unitario")),
+                        EspecificacoesTecnicas = drItens.IsDBNull(drItens.GetOrdinal("especificacoes_tecnicas")) ? null : drItens.GetString(drItens.GetOrdinal("especificacoes_tecnicas"))
+                    });
+                }
+            }
+
+            return lista;
+        }
+
         private static Pagamento MapearPagamento(NpgsqlDataReader dr)
         {
             return new Pagamento

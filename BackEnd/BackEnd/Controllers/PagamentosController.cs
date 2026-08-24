@@ -102,6 +102,49 @@ namespace BackEnd.Controllers
         }
 
         /// <summary>
+        /// Endpoint para listar todas as encomendas com pagamentos pendentes na retirada (Balcão)
+        /// </summary>
+        [HttpGet("pendentes")]
+        public IActionResult ObterPendentes()
+        {
+            try
+            {
+                var pendentes = _pagamentoService.ObterPendentesRetirada();
+                return Ok(pendentes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao buscar pendências de pagamento", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Endpoint para dar baixa e liquidar o pagamento de uma encomenda no caixa da panificadora
+        /// </summary>
+        [HttpPost("liquidar")]
+        public IActionResult Liquidar([FromBody] LiquidarPagamentoRequestDTO request)
+        {
+            try
+            {
+                if (request.EncomendaId <= 0)
+                {
+                    return BadRequest(new { erro = "ID da encomenda inválido." });
+                }
+
+                var sucesso = _pagamentoService.LiquidarSaldo(request.EncomendaId, request.FormaPagamento ?? "Dinheiro", request.CaixaId);
+                if (sucesso)
+                {
+                    return Ok(new { mensagem = "Pagamento liquidado com sucesso e encomenda concluída." });
+                }
+                return BadRequest(new { erro = "Não foi possível liquidar o pagamento da encomenda." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao liquidar pagamento", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Endpoint para registrar o compromisso de pagamento presencial na retirada (Balcão da panificadora)
         /// </summary>
         [HttpPost("registrar-presencial")]

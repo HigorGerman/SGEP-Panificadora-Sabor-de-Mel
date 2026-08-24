@@ -13,5 +13,6 @@ namespace BackEnd.Repository
         bool AtualizarStatus(int id, string status, string? formaPagamento = null, decimal? saldoDevedor = null);
         bool AtualizarMercadoPagoInfo(int id, string? preferenceId, long? mpPaymentId);
         bool LiquidarSaldo(int encomendaId, string formaPagamento, int? caixaId);
+        List<BackEnd.Controllers.DTOS.PagamentoPendenteDTO> ObterPendentesRetirada();
     }
 }
