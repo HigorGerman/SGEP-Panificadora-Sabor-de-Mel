@@ -7,3 +7,19 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Regras globais de impressão para ocultar navegações e barras durante o window.print() */
+@media print {
+  header, aside, nav, .no-print, [class*="sidebar"], [class*="Header"] {
+    display: none !important;
+  }
+
+  body, main {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+}

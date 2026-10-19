@@ -81,6 +81,32 @@ namespace BackEnd.Controllers
         }
 
         /// <summary>
+        /// Endpoint para confirmar o retorno do cliente após pagamento no Mercado Pago Checkout Pro
+        /// </summary>
+        [HttpPost("confirmar-retorno")]
+        public async Task<IActionResult> ConfirmarRetorno([FromBody] ConfirmarRetornoMercadoPagoDTO dto)
+        {
+            try
+            {
+                if (dto.EncomendaId <= 0)
+                {
+                    return BadRequest(new { erro = "ID da encomenda inválido." });
+                }
+
+                var sucesso = await _pagamentoService.ConfirmarRetornoMercadoPagoAsync(dto);
+                if (sucesso)
+                {
+                    return Ok(new { mensagem = "Pagamento via Mercado Pago confirmado com sucesso e encomenda atualizada!" });
+                }
+                return BadRequest(new { erro = "Não foi possível confirmar o pagamento do Mercado Pago." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao confirmar retorno do Mercado Pago", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Consulta a situação financeira/pagamento de uma encomenda específica
         /// </summary>
         [HttpGet("encomenda/{encomendaId:int}")]
@@ -98,6 +124,23 @@ namespace BackEnd.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { erro = "Erro ao obter status do pagamento", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Endpoint para obter estatísticas agregadas e métricas financeiras para o Dashboard
+        /// </summary>
+        [HttpGet("dashboard")]
+        public IActionResult ObterDashboard([FromQuery] DateTime? dataInicio, [FromQuery] DateTime? dataFim)
+        {
+            try
+            {
+                var dados = _pagamentoService.ObterDadosDashboard(dataInicio, dataFim);
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao carregar dados do dashboard", detalhe = ex.Message });
             }
         }
 

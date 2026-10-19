@@ -1,6 +1,6 @@
 "use client"
 import Link from 'next/link';
-import { FiHome, FiUsers, FiBox, FiList, FiUser, FiBookOpen, FiLayers, FiClock, FiShoppingBag, FiPackage, FiArchive } from 'react-icons/fi';
+import { FiHome, FiUsers, FiBox, FiList, FiUser, FiBookOpen, FiLayers, FiClock, FiShoppingBag, FiPackage, FiArchive, FiBarChart2, FiDollarSign, FiAlertOctagon } from 'react-icons/fi';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import styles from './sidebar.module.css';
@@ -26,10 +26,11 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   ];
 
   const adminItems = [
+    { name: 'Dashboard & Relatórios', path: '/admin/dashboard', icon: <FiBarChart2 /> },
+    { name: 'Retirada & Cobrança', path: '/retirada', icon: <FiDollarSign /> },
+    { name: 'Inadimplência & Bloqueios', path: '/admin/inadimplencia', icon: <FiAlertOctagon /> },
     { name: 'Produção', path: '/producao', icon: <FiClock /> },
-    { name: 'Retirada (Balcão)', path: '/retirada', icon: <FiPackage /> },
     { name: 'Histórico', path: '/historico', icon: <FiArchive /> },
-    { name: 'Clientes', path: '/clientes', icon: <FiUsers /> },
     { name: 'Categorias', path: '/categorias', icon: <FiLayers /> },
     { name: 'Produtos', path: '/produtos', icon: <FiBox /> },
     { name: 'Livro de Receitas', path: '/receitas', icon: <FiBookOpen /> },
@@ -43,9 +44,9 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   return (
     <>
-      {isOpen && <div className={styles.overlay} onClick={() => {}} />}
+      {isOpen && <div className={styles.overlay} onClick={() => { }} />}
       <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : styles.sidebarClosed}`}>
-        
+
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Navegação</div>
           <nav className={styles.nav}>

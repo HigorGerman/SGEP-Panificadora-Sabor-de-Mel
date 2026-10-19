@@ -454,3 +454,61 @@
   from { opacity: 0; transform: translateX(50px); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+/* Alertas de Inadimplência no Card */
+.badgeInadimplencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FCD34D;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.badgeClienteBloqueado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FEE2E2;
+  color: #B91C1C;
+  border: 1px solid #FCA5A5;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.cardActionsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btnSinalizarCliente {
+  background: transparent;
+  color: #C53030;
+  border: 1px dashed #FEB2B2;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btnSinalizarCliente:hover {
+  background: #FFF5F5;
+  border-color: #E53E3E;
+  color: #9B2C2C;
+}
+

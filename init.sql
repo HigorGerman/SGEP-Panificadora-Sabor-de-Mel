@@ -4,6 +4,7 @@
 -- ==============================================================================
 
 -- 1. Limpeza preventiva de tabelas existentes (mantendo ordem de dependência)
+DROP TABLE IF EXISTS token_autenticacao CASCADE;
 DROP TABLE IF EXISTS pagamento CASCADE;
 DROP TABLE IF EXISTS caixa CASCADE;
 DROP TABLE IF EXISTS item_encomenda CASCADE;
@@ -39,7 +40,20 @@ CREATE TABLE cliente (
     restricao_gluten BOOLEAN NOT NULL DEFAULT FALSE,
     restricao_lactose BOOLEAN NOT NULL DEFAULT FALSE,
     restricao_acucar BOOLEAN NOT NULL DEFAULT FALSE,
-    ativo BOOLEAN NOT NULL DEFAULT TRUE
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    bloqueado_encomendas BOOLEAN NOT NULL DEFAULT FALSE,
+    motivo_bloqueio VARCHAR(255)
+);
+
+-- Tabela: token_autenticacao (Tokens de Recuperação e Exclusão por E-mail)
+CREATE TABLE token_autenticacao (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER NOT NULL REFERENCES cliente(id) ON DELETE CASCADE,
+    codigo_token VARCHAR(6) NOT NULL,
+    tipo_token VARCHAR(50) NOT NULL, -- 'RECUPERACAO_SENHA', 'EXCLUSAO_CONTA'
+    data_expiracao TIMESTAMP NOT NULL,
+    utilizado BOOLEAN NOT NULL DEFAULT FALSE,
+    data_criacao TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
 );
 
 -- Tabela: categoria (Categorias de Produtos)

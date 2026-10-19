@@ -316,3 +316,60 @@
     display: none;
   }
 }
+
+.bannerSuccess {
+  margin-bottom: 25px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-left: 6px solid #10b981;
+  padding: 16px 20px;
+  border-radius: 12px;
+  color: #065f46;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+.bannerWarning {
+  margin-bottom: 25px;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 6px solid #f59e0b;
+  padding: 16px 20px;
+  border-radius: 12px;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+}
+
+.bannerError {
+  margin-bottom: 25px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 6px solid #ef4444;
+  padding: 16px 20px;
+  border-radius: 12px;
+  color: #991b1b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+}
+
+.bannerClose {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  padding: 0 6px;
+}
+.bannerClose:hover {
+  opacity: 1;
+}
+

@@ -6,7 +6,8 @@ public record EncomendaCreateDto(
     int? UsuarioId,
     DateTime DataEntrega,
     string? Observacao,
-    List<ItemEncomendaDto> Itens
+    List<ItemEncomendaDto> Itens,
+    string? Cpf = null
 );
 
 public record ItemEncomendaDto(

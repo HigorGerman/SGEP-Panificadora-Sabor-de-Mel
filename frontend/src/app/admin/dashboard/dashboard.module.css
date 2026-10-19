@@ -1,0 +1,444 @@
+.container {
+  min-height: 100vh;
+  background-color: #FAF6F0;
+  padding: 30px 24px 80px 24px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #2D3748;
+}
+
+.header {
+  max-width: 1200px;
+  margin: 0 auto 25px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.titleBox h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #7A1C31;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.titleBox p {
+  color: #718096;
+  font-size: 0.95rem;
+}
+
+.btnPrintReport {
+  background: linear-gradient(135deg, #7A1C31 0%, #5B0A1A 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(122, 28, 49, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btnPrintReport:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(122, 28, 49, 0.35);
+}
+
+/* Period Filter Bar */
+.filterCard {
+  max-width: 1200px;
+  margin: 0 auto 30px auto;
+  background: white;
+  border-radius: 16px;
+  padding: 18px 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.filterLabel {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #2D3748;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterPills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filterPill {
+  background: #FAF6F0;
+  border: 1.5px solid #E2E8F0;
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #4A5568;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterPill:hover {
+  border-color: #CBD5E0;
+  background: white;
+}
+
+.filterPillActive {
+  background: #7A1C31 !important;
+  color: white !important;
+  border-color: #7A1C31 !important;
+}
+
+.customDateGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dateInput {
+  padding: 8px 12px;
+  border: 1px solid #CBD5E0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+/* KPI Cards Grid */
+.kpiGrid {
+  max-width: 1200px;
+  margin: 0 auto 30px auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.kpiCard {
+  background: white;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transition: transform 0.2s;
+}
+
+.kpiCard:hover {
+  transform: translateY(-3px);
+}
+
+.kpiIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+.kpiContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpiTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpiValue {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #2D3748;
+}
+
+.kpiSubtext {
+  font-size: 0.78rem;
+  color: #A0AEC0;
+}
+
+/* Dashboard Sections Layout */
+.dashboardSection {
+  max-width: 1200px;
+  margin: 0 auto 30px auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .dashboardSection {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panelCard {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #FAF6F0;
+  padding-bottom: 12px;
+}
+
+.panelTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #7A1C31;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ranking Table / Items List */
+.rankingList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rankingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #FAF6F0;
+  border-radius: 12px;
+}
+
+.rankingBadge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #7A1C31;
+  color: white;
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.rankingName {
+  font-weight: 700;
+  color: #2D3748;
+  font-size: 0.95rem;
+}
+
+.rankingStats {
+  text-align: right;
+}
+
+.rankingValue {
+  font-weight: 800;
+  color: #7A1C31;
+  font-size: 0.95rem;
+}
+
+.rankingQty {
+  font-size: 0.78rem;
+  color: #718096;
+}
+
+/* Payment Method Breakdown Bars */
+.formaList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formaHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.progressBarBg {
+  height: 10px;
+  background: #EDF2F7;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #7A1C31 0%, #10B981 100%);
+  border-radius: 10px;
+  transition: width 0.4s ease;
+}
+
+/* Daily Revenue Timeline Bar Chart */
+.chartContainer {
+  max-width: 1200px;
+  margin: 0 auto 30px auto;
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #E2E8F0;
+}
+
+.barChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  height: 200px;
+  padding-top: 20px;
+  overflow-x: auto;
+}
+
+.barCol {
+  flex: 1;
+  min-width: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.barFill {
+  width: 100%;
+  max-width: 36px;
+  background: linear-gradient(180deg, #7A1C31 0%, #5B0A1A 100%);
+  border-radius: 8px 8px 0 0;
+  transition: height 0.4s ease;
+  position: relative;
+}
+
+.barVal {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #7A1C31;
+}
+
+.barLabel {
+  font-size: 0.75rem;
+  color: #718096;
+  font-weight: 600;
+}
+
+/* Report Modal (Print Preview) */
+.reportOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 500;
+  padding: 20px;
+}
+
+.reportModal {
+  background: white;
+  border-radius: 20px;
+  padding: 35px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.reportHeader {
+  border-bottom: 2px solid #7A1C31;
+  padding-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reportTitle {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #7A1C31;
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  background: #FAF6F0;
+  padding: 16px;
+  border-radius: 14px;
+}
+
+.reportField {
+  display: flex;
+  flex-direction: column;
+}
+
+.reportLabel {
+  font-size: 0.8rem;
+  color: #718096;
+  font-weight: 700;
+}
+
+.reportValue {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #2D3748;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .reportModal, .reportModal * {
+    visibility: visible;
+  }
+  .reportModal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    box-shadow: none;
+  }
+}

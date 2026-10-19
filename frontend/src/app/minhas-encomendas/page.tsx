@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import api from '@/services/api';
 import styles from './minhas-encomendas.module.css';
 
@@ -12,13 +13,65 @@ interface Encomenda {
   observacao?: string;
 }
 
-export default function MinhasEncomendas() {
+function MinhasEncomendasContent() {
+  const searchParams = useSearchParams();
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
+  const [banner, setBanner] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     fetchEncomendas();
-  }, []);
+    verificarRetornoMercadoPago();
+  }, [searchParams]);
+
+  const verificarRetornoMercadoPago = async () => {
+    const statusParam = searchParams.get('status') || searchParams.get('collection_status');
+    const paymentIdParam = searchParams.get('payment_id');
+    const externalRef = searchParams.get('external_reference');
+    const preferenceId = searchParams.get('preference_id');
+    const paymentType = searchParams.get('payment_type');
+
+    if (!statusParam && !paymentIdParam) return;
+
+    if (statusParam === 'approved' || statusParam === 'sucesso') {
+      try {
+        await api.post('/api/pagamentos/confirmar-retorno', {
+          paymentId: paymentIdParam ? parseInt(paymentIdParam) : null,
+          status: 'approved',
+          externalReference: externalRef || null,
+          preferenceId: preferenceId || null,
+          paymentType: paymentType || 'mercadopago'
+        });
+
+        setBanner({
+          type: 'success',
+          message: `🎉 Pagamento aprovado com sucesso pelo Mercado Pago! Seu pedido #${externalRef || ''} foi confirmado e enviado para a produção.`
+        });
+      } catch (err) {
+        console.warn("Aviso ao confirmar retorno do MP:", err);
+        setBanner({
+          type: 'success',
+          message: '🎉 Pagamento registrado no Mercado Pago! Atualizando seus pedidos...'
+        });
+      } finally {
+        // Remove os parâmetros da URL para evitar chamadas duplicadas
+        window.history.replaceState({}, '', '/minhas-encomendas');
+        fetchEncomendas();
+      }
+    } else if (statusParam === 'pending' || statusParam === 'pendente' || statusParam === 'in_process') {
+      setBanner({
+        type: 'warning',
+        message: '⏳ Pagamento via Mercado Pago está em processamento. Assim que compensado, seu pedido será liberado.'
+      });
+      window.history.replaceState({}, '', '/minhas-encomendas');
+    } else if (statusParam === 'failure' || statusParam === 'falha' || statusParam === 'rejected') {
+      setBanner({
+        type: 'error',
+        message: '❌ O pagamento pelo Mercado Pago não foi aprovado ou foi cancelado. Se preferir, você pode pagar presencialmente na retirada no balcão.'
+      });
+      window.history.replaceState({}, '', '/minhas-encomendas');
+    }
+  };
 
   const fetchEncomendas = async () => {
     try {
@@ -72,6 +125,17 @@ export default function MinhasEncomendas() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Minhas Encomendas</h1>
+
+      {banner && (
+        <div className={
+          banner.type === 'success' ? styles.bannerSuccess :
+          banner.type === 'warning' ? styles.bannerWarning :
+          styles.bannerError
+        }>
+          <span>{banner.message}</span>
+          <button className={styles.bannerClose} onClick={() => setBanner(null)}>&times;</button>
+        </div>
+      )}
       
       <div className={styles.list}>
         {encomendas.length === 0 ? (
@@ -127,5 +191,13 @@ export default function MinhasEncomendas() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function MinhasEncomendas() {
+  return (
+    <Suspense fallback={<div className={styles.container}><div className={styles.emptyState}>Carregando...</div></div>}>
+      <MinhasEncomendasContent />
+    </Suspense>
   );
 }

@@ -14,5 +14,6 @@ namespace BackEnd.Repository
         bool AtualizarMercadoPagoInfo(int id, string? preferenceId, long? mpPaymentId);
         bool LiquidarSaldo(int encomendaId, string formaPagamento, int? caixaId);
         List<BackEnd.Controllers.DTOS.PagamentoPendenteDTO> ObterPendentesRetirada();
+        BackEnd.Controllers.DTOS.DashboardResponseDTO ObterDadosDashboard(System.DateTime? dataInicio, System.DateTime? dataFim);
     }
 }

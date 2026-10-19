@@ -69,10 +69,11 @@ namespace BackEnd.Services
                 ExternalReference = encomenda.Id.ToString(),
                 BackUrls = new PreferenceBackUrlsRequest
                 {
-                    Success = "http://localhost:3000/historico?status=sucesso",
-                    Failure = "http://localhost:3000/historico?status=falha",
-                    Pending = "http://localhost:3000/historico?status=pendente"
-                }
+                    Success = "http://localhost:3000/minhas-encomendas?status=sucesso",
+                    Failure = "http://localhost:3000/minhas-encomendas?status=falha",
+                    Pending = "http://localhost:3000/minhas-encomendas?status=pendente"
+                },
+                AutoReturn = "approved"
             };
 
             var originalCulture = CultureInfo.CurrentCulture;
@@ -206,6 +207,84 @@ namespace BackEnd.Services
             }
         }
 
+        public async Task<bool> ConfirmarRetornoMercadoPagoAsync(ConfirmarRetornoMercadoPagoDTO dto)
+        {
+            if (dto.EncomendaId <= 0) return false;
+
+            var pagamento = _pagamentoRepository.ObterPorEncomendaId(dto.EncomendaId);
+            var encomenda = _encomendaRepository.ObterPorId(dto.EncomendaId);
+            if (encomenda == null) return false;
+
+            // Se recebemos um PaymentId válido, tenta primeiro consultar no SDK do MP
+            if (dto.PaymentId.HasValue && dto.PaymentId.Value > 0)
+            {
+                try
+                {
+                    var paymentClient = new PaymentClient();
+                    Payment payment = await paymentClient.GetAsync(dto.PaymentId.Value);
+                    if (payment != null && payment.Status == "approved")
+                    {
+                        return await ProcessarConfirmacaoMercadoPagoAsync(dto.PaymentId.Value);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Aviso: Não foi possível consultar API do MP diretamente: {ex.Message}. Validando parâmetros de retorno.");
+                }
+            }
+
+            // Fallback: Se o status vindo do retorno for approved ou sucesso
+            string statusLower = (dto.Status ?? "").ToLower();
+            if (statusLower == "approved" || statusLower == "sucesso")
+            {
+                string forma = "Mercado Pago Online";
+                if (!string.IsNullOrWhiteSpace(dto.PaymentType))
+                {
+                    forma = dto.PaymentType.ToLower() switch
+                    {
+                        "credit_card" => "Mercado Pago (Cartão Crédito)",
+                        "debit_card" => "Mercado Pago (Cartão Débito)",
+                        "bank_transfer" or "pix" => "Mercado Pago (Pix)",
+                        _ => $"Mercado Pago ({dto.PaymentType})"
+                    };
+                }
+
+                if (pagamento != null)
+                {
+                    pagamento.Status = "pago";
+                    pagamento.SaldoDevedor = 0m;
+                    pagamento.FormaPagamento = forma;
+                    pagamento.MpPaymentId = dto.PaymentId ?? pagamento.MpPaymentId;
+                    pagamento.PreferenceId = dto.PreferenceId ?? pagamento.PreferenceId;
+                    _pagamentoRepository.Atualizar(pagamento);
+                }
+                else
+                {
+                    _pagamentoRepository.Criar(new Pagamento
+                    {
+                        EncomendaId = dto.EncomendaId,
+                        ValorTotal = encomenda.ValorTotal,
+                        ValorSinal = 0m,
+                        SaldoDevedor = 0m,
+                        Status = "pago",
+                        FormaPagamento = forma,
+                        PreferenceId = dto.PreferenceId,
+                        MpPaymentId = dto.PaymentId,
+                        DataCriacao = DateTime.UtcNow
+                    });
+                }
+
+                if (encomenda.Status == Encomenda.StatusEnum.Pendente)
+                {
+                    _encomendaRepository.AtualizarStatus(dto.EncomendaId, Encomenda.StatusEnum.EmAndamento);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
         public Pagamento? ObterPorEncomendaId(int encomendaId)
         {
             return _pagamentoRepository.ObterPorEncomendaId(encomendaId);
@@ -259,6 +338,11 @@ namespace BackEnd.Services
                 };
                 return _pagamentoRepository.Criar(novo) > 0;
             }
+        }
+
+        public DashboardResponseDTO ObterDadosDashboard(DateTime? dataInicio, DateTime? dataFim)
+        {
+            return _pagamentoRepository.ObterDadosDashboard(dataInicio, dataFim);
         }
     }
 }

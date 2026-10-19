@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { 
   FaSearch, FaCashRegister, FaClock, FaUser, FaPhone, 
   FaCheckCircle, FaTimes, FaMoneyBillWave, FaCreditCard, 
-  FaQrcode, FaExchangeAlt, FaReceipt, FaExclamationCircle
+  FaQrcode, FaExchangeAlt, FaReceipt, FaExclamationCircle,
+  FaUserSlash, FaLock, FaExclamationTriangle
 } from 'react-icons/fa';
 import api from '@/services/api';
 import styles from './cobranca.module.css';
@@ -34,13 +35,20 @@ interface EncomendaPendente {
 
 export default function AdminCobrancaPage() {
   const [pendentes, setPendentes] = useState<EncomendaPendente[]>([]);
+  const [delinquentMap, setDelinquentMap] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal de Liquidação / Dar Baixa no Caixa
   const [selectedEncomenda, setSelectedEncomenda] = useState<EncomendaPendente | null>(null);
   const [formaPagamentoSelecao, setFormaPagamentoSelecao] = useState<string>('Dinheiro');
+  const [registrarEntregaAoQuitar, setRegistrarEntregaAoQuitar] = useState<boolean>(true);
   const [processing, setProcessing] = useState(false);
+
+  // Modal Rápido de Sinalizar / Bloquear Cliente
+  const [bloqueioModalEnc, setBloqueioModalEnc] = useState<EncomendaPendente | null>(null);
+  const [motivoBloqueioRapido, setMotivoBloqueioRapido] = useState('Atraso recorrente no pagamento / balcão');
+  const [processingBloqueio, setProcessingBloqueio] = useState(false);
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -53,8 +61,26 @@ export default function AdminCobrancaPage() {
 
   const carregarPendentes = async () => {
     try {
-      const response = await api.get('/api/pagamentos/pendentes');
-      setPendentes(response.data);
+      const [resPendentes, resInadimplentes] = await Promise.all([
+        api.get('/api/pagamentos/pendentes'),
+        api.get('/api/admin/inadimplencia').catch(() => ({ data: [] }))
+      ]);
+
+      setPendentes(resPendentes.data || []);
+
+      // Mapear inadimplentes e bloqueados por CPF e ID
+      const map: Record<string, any> = {};
+      if (Array.isArray(resInadimplentes.data)) {
+        resInadimplentes.data.forEach((c: any) => {
+          if (c.id) map[`id_${c.id}`] = c;
+          if (c.cpf) {
+            map[`cpf_${c.cpf}`] = c;
+            const limpo = c.cpf.replace(/\D/g, '');
+            if (limpo) map[`cpf_${limpo}`] = c;
+          }
+        });
+      }
+      setDelinquentMap(map);
     } catch (error) {
       console.error("Erro ao carregar pendências de pagamento:", error);
     } finally {
@@ -72,6 +98,66 @@ export default function AdminCobrancaPage() {
   const handleOpenModal = (enc: EncomendaPendente) => {
     setSelectedEncomenda(enc);
     setFormaPagamentoSelecao('Dinheiro');
+    setRegistrarEntregaAoQuitar(true);
+  };
+
+  const handleOpenBloqueioModal = (enc: EncomendaPendente) => {
+    setBloqueioModalEnc(enc);
+    const info = delinquentMap[`id_${enc.clienteId}`] || delinquentMap[`cpf_${enc.clienteCpf}`];
+    setMotivoBloqueioRapido(info?.motivoBloqueio || 'Atraso recorrente no pagamento / retirada');
+  };
+
+  const handleConfirmarBloqueioRapido = async () => {
+    if (!bloqueioModalEnc) return;
+
+    setProcessingBloqueio(true);
+    try {
+      let cId = bloqueioModalEnc.clienteId;
+      if (!cId && bloqueioModalEnc.clienteCpf) {
+        const info = await api.get(`/api/admin/clientes/verificar-cpf/${encodeURIComponent(bloqueioModalEnc.clienteCpf)}`);
+        cId = info.data?.clienteId;
+      }
+
+      if (!cId) {
+        alert("Não foi possível identificar o cadastro deste cliente no sistema.");
+        return;
+      }
+
+      const infoAtual = delinquentMap[`id_${cId}`] || delinquentMap[`cpf_${bloqueioModalEnc.clienteCpf}`];
+      const novoBloqueio = !infoAtual?.bloqueadoEncomendas;
+
+      await api.patch(`/api/admin/clientes/${cId}/bloqueio`, {
+        bloqueadoEncomendas: novoBloqueio,
+        motivoBloqueio: novoBloqueio ? motivoBloqueioRapido : null
+      });
+
+      showToast(novoBloqueio 
+        ? `🚫 Cliente ${bloqueioModalEnc.clienteNome} foi bloqueado para novas encomendas!`
+        : `✅ Restrição removida para ${bloqueioModalEnc.clienteNome}.`
+      );
+
+      // Atualiza o mapa local
+      setDelinquentMap(prev => ({
+        ...prev,
+        [`id_${cId}`]: {
+          ...prev[`id_${cId}`],
+          bloqueadoEncomendas: novoBloqueio,
+          motivoBloqueio: novoBloqueio ? motivoBloqueioRapido : null
+        },
+        [`cpf_${bloqueioModalEnc.clienteCpf}`]: {
+          ...prev[`cpf_${bloqueioModalEnc.clienteCpf}`],
+          bloqueadoEncomendas: novoBloqueio,
+          motivoBloqueio: novoBloqueio ? motivoBloqueioRapido : null
+        }
+      }));
+
+      setBloqueioModalEnc(null);
+    } catch (err: any) {
+      console.error("Erro ao alterar bloqueio rápido:", err);
+      alert(err.response?.data?.message || "Erro ao atualizar bloqueio do cliente.");
+    } finally {
+      setProcessingBloqueio(false);
+    }
   };
 
   const handleLiquidarPagamento = async () => {
@@ -79,13 +165,26 @@ export default function AdminCobrancaPage() {
 
     setProcessing(true);
     try {
+      // 1. Quitar o pagamento
       await api.post('/api/pagamentos/liquidar', {
         encomendaId: selectedEncomenda.encomendaId,
         formaPagamento: formaPagamentoSelecao,
         caixaId: null
       });
 
-      showToast(`✅ Pagamento da Encomenda #${selectedEncomenda.encomendaId} liquidado com sucesso (${formaPagamentoSelecao})!`);
+      // 2. Se marcado, também registrar a entrega física da encomenda
+      if (registrarEntregaAoQuitar) {
+        try {
+          const usuarioId = typeof window !== 'undefined' ? localStorage.getItem('usuario_id') : null;
+          await api.post(`/api/Encomenda/${selectedEncomenda.encomendaId}/entrega`, {
+            usuarioId: usuarioId ? parseInt(usuarioId) : null
+          });
+        } catch (errEntrega) {
+          console.warn("Aviso ao registrar entrega após liquidação:", errEntrega);
+        }
+      }
+
+      showToast(`✅ Pagamento da Encomenda #${selectedEncomenda.encomendaId} liquidado (${formaPagamentoSelecao})${registrarEntregaAoQuitar ? ' e entrega registrada' : ''}!`);
       
       // Remover da lista local em tempo real
       setPendentes(prev => prev.filter(p => p.encomendaId !== selectedEncomenda.encomendaId));
@@ -194,7 +293,18 @@ export default function AdminCobrancaPage() {
               
               {/* Card Header Ribbon */}
               <div className={styles.cardHeader}>
-                <span className={styles.orderId}>#{enc.encomendaId}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className={styles.orderId}>#{enc.encomendaId}</span>
+                  {enc.formaPagamento.toLowerCase().includes('mercado pago') ? (
+                    <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '2px 8px', borderRadius: '50px', fontSize: '0.72rem', fontWeight: '800' }}>
+                      Mercado Pago
+                    </span>
+                  ) : (
+                    <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: '50px', fontSize: '0.72rem', fontWeight: '800' }}>
+                      Balcão
+                    </span>
+                  )}
+                </div>
                 <span className={styles.pickupTime}>
                   <FaClock /> {formatarDataHora(enc.dataRetirada)}
                 </span>
@@ -215,6 +325,29 @@ export default function AdminCobrancaPage() {
                       <span><FaPhone style={{ fontSize: '0.75rem', marginRight: '3px' }} />{enc.clienteTelefone}</span>
                     )}
                   </div>
+
+                  {/* Alerta Visual de Inadimplência e Bloqueio */}
+                  {(() => {
+                    const delinquentInfo = delinquentMap[`id_${enc.clienteId}`] 
+                      || delinquentMap[`cpf_${enc.clienteCpf}`] 
+                      || delinquentMap[`cpf_${enc.clienteCpf?.replace(/\D/g, '')}`];
+
+                    if (delinquentInfo?.bloqueadoEncomendas) {
+                      return (
+                        <div className={styles.badgeClienteBloqueado}>
+                          <FaLock size={10} /> ⛔ Cliente Bloqueado {delinquentInfo.motivoBloqueio ? `(${delinquentInfo.motivoBloqueio})` : ''}
+                        </div>
+                      );
+                    }
+                    if (delinquentInfo && (delinquentInfo.qtdEncomendasPendentes > 1 || delinquentInfo.qtdEncomendasAtraso > 0)) {
+                      return (
+                        <div className={styles.badgeInadimplencia}>
+                          <FaExclamationTriangle size={10} /> ⚠️ Histórico: {delinquentInfo.qtdEncomendasPendentes} em débito (R$ {delinquentInfo.valorTotalDevido?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {/* Itens da Encomenda */}
@@ -260,12 +393,23 @@ export default function AdminCobrancaPage() {
 
               {/* Card Action */}
               <div className={styles.cardFooter}>
-                <button
-                  className={styles.btnLiquidar}
-                  onClick={() => handleOpenModal(enc)}
-                >
-                  <FaCashRegister /> Registrar Pagamento na Retirada
-                </button>
+                <div className={styles.cardActionsRow}>
+                  <button
+                    className={styles.btnLiquidar}
+                    onClick={() => handleOpenModal(enc)}
+                  >
+                    <FaCashRegister /> Registrar Pagamento na Retirada
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.btnSinalizarCliente}
+                    onClick={() => handleOpenBloqueioModal(enc)}
+                    title="Sinalizar ou alternar bloqueio do cliente"
+                  >
+                    <FaUserSlash /> Sinalizar / Bloquear Cliente
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -347,6 +491,20 @@ export default function AdminCobrancaPage() {
               </div>
             </div>
 
+            {/* Checkbox para entregar imediatamente */}
+            <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px', background: '#F7FAFC', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+              <input
+                type="checkbox"
+                id="chkEntregar"
+                checked={registrarEntregaAoQuitar}
+                onChange={e => setRegistrarEntregaAoQuitar(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#7A1C31' }}
+              />
+              <label htmlFor="chkEntregar" style={{ fontSize: '0.9rem', color: '#2D3748', cursor: 'pointer', fontWeight: '600' }}>
+                Confirmar e marcar encomenda como <strong style={{ color: '#059669' }}>Entregue</strong> imediatamente
+              </label>
+            </div>
+
             {/* Modal Actions */}
             <div className={styles.modalActions}>
               <button
@@ -366,6 +524,81 @@ export default function AdminCobrancaPage() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal Rápido de Sinalizar / Bloquear Cliente no Balcão */}
+      {bloqueioModalEnc && (
+        <div className={styles.modalOverlay} onClick={() => setBloqueioModalEnc(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle} style={{ color: '#7A1C31', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FaUserSlash /> Gerenciar Bloqueio de Cliente
+              </div>
+              <button className={styles.closeBtn} onClick={() => setBloqueioModalEnc(null)}>
+                <FaTimes />
+              </button>
+            </div>
+
+            <div style={{ background: '#FAF6F0', padding: '16px', borderRadius: '14px', borderLeft: '4px solid #7A1C31', marginBottom: '16px' }}>
+              <div style={{ fontWeight: '800', color: '#2D3748', fontSize: '1.05rem' }}>
+                {bloqueioModalEnc.clienteNome}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#718096', marginTop: '3px' }}>
+                CPF: {bloqueioModalEnc.clienteCpf} | Encomenda #{bloqueioModalEnc.encomendaId}
+              </div>
+              {delinquentMap[`id_${bloqueioModalEnc.clienteId}`]?.bloqueadoEncomendas && (
+                <div style={{ marginTop: '8px', color: '#DC2626', fontWeight: '800', fontSize: '0.85rem' }}>
+                  🚫 Status atual no sistema: CLIENTE BLOQUEADO
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ fontSize: '0.9rem', fontWeight: '800', color: '#2D3748', display: 'block', marginBottom: '8px' }}>
+                Motivo da Restrição / Bloqueio:
+              </label>
+              <textarea
+                style={{ width: '100%', border: '1px solid #CBD5E0', borderRadius: '10px', padding: '10px', fontSize: '0.9rem', outline: 'none' }}
+                rows={2}
+                value={motivoBloqueioRapido}
+                onChange={e => setMotivoBloqueioRapido(e.target.value)}
+                placeholder="Ex: Atraso recorrente no pagamento / balcão..."
+              />
+            </div>
+
+            <div className={styles.modalActions}>
+              <button
+                className={styles.btnCancel}
+                disabled={processingBloqueio}
+                onClick={() => setBloqueioModalEnc(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                style={{
+                  background: delinquentMap[`id_${bloqueioModalEnc.clienteId}`]?.bloqueadoEncomendas ? '#10B981' : '#DC2626',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 20px',
+                  borderRadius: '12px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                disabled={processingBloqueio}
+                onClick={handleConfirmarBloqueioRapido}
+              >
+                {delinquentMap[`id_${bloqueioModalEnc.clienteId}`]?.bloqueadoEncomendas ? (
+                  <>Desbloquear Cliente</>
+                ) : (
+                  <>Confirmar Bloqueio</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

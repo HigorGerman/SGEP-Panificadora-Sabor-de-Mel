@@ -212,21 +212,48 @@ namespace BackEnd.Repository
 
         public bool LiquidarSaldo(int encomendaId, string formaPagamento, int? caixaId)
         {
+            GarantirTabelaExiste();
             var conexao = _context.GetConexao();
-            using var cmd = conexao.CreateCommand();
-            cmd.CommandText = @"
-                UPDATE pagamento SET 
-                    saldo_devedor = 0.00,
-                    status = 'pago',
-                    forma_pagamento = @formaPagamento,
-                    caixa_id = COALESCE(@caixaId, caixa_id)
-                WHERE encomenda_id = @encomendaId";
 
-            cmd.Parameters.AddWithValue("@encomendaId", encomendaId);
-            cmd.Parameters.AddWithValue("@formaPagamento", formaPagamento);
-            cmd.Parameters.AddWithValue("@caixaId", (object?)caixaId ?? DBNull.Value);
+            // 1. Verifica se já existe um registro de pagamento para a encomenda
+            using var cmdCheck = conexao.CreateCommand();
+            cmdCheck.CommandText = "SELECT id FROM pagamento WHERE encomenda_id = @encomendaId ORDER BY id DESC LIMIT 1";
+            cmdCheck.Parameters.AddWithValue("@encomendaId", encomendaId);
+            var pagIdObj = cmdCheck.ExecuteScalar();
 
-            return cmd.ExecuteNonQuery() > 0;
+            if (pagIdObj != null)
+            {
+                using var cmdUpdate = conexao.CreateCommand();
+                cmdUpdate.CommandText = @"
+                    UPDATE pagamento SET 
+                        saldo_devedor = 0.00,
+                        status = 'pago',
+                        forma_pagamento = @formaPagamento,
+                        caixa_id = COALESCE(@caixaId, caixa_id)
+                    WHERE id = @id";
+
+                cmdUpdate.Parameters.AddWithValue("@id", Convert.ToInt32(pagIdObj));
+                cmdUpdate.Parameters.AddWithValue("@formaPagamento", formaPagamento);
+                cmdUpdate.Parameters.AddWithValue("@caixaId", (object?)caixaId ?? DBNull.Value);
+
+                return cmdUpdate.ExecuteNonQuery() > 0;
+            }
+            else
+            {
+                // Inserir registro de pagamento para encomendas que ainda não possuíam
+                using var cmdInsert = conexao.CreateCommand();
+                cmdInsert.CommandText = @"
+                    INSERT INTO pagamento (encomenda_id, valor_total, valor_sinal, saldo_devedor, status, forma_pagamento, caixa_id, data_criacao)
+                    SELECT id, valor_total, 0.00, 0.00, 'pago', @formaPagamento, @caixaId, NOW() AT TIME ZONE 'UTC'
+                    FROM encomenda
+                    WHERE id = @encomendaId";
+
+                cmdInsert.Parameters.AddWithValue("@encomendaId", encomendaId);
+                cmdInsert.Parameters.AddWithValue("@formaPagamento", formaPagamento);
+                cmdInsert.Parameters.AddWithValue("@caixaId", (object?)caixaId ?? DBNull.Value);
+
+                return cmdInsert.ExecuteNonQuery() > 0;
+            }
         }
 
         public List<BackEnd.Controllers.DTOS.PagamentoPendenteDTO> ObterPendentesRetirada()
@@ -305,6 +332,167 @@ namespace BackEnd.Repository
             }
 
             return lista;
+        }
+
+        public BackEnd.Controllers.DTOS.DashboardResponseDTO ObterDadosDashboard(DateTime? dataInicio, DateTime? dataFim)
+        {
+            GarantirTabelaExiste();
+            var result = new BackEnd.Controllers.DTOS.DashboardResponseDTO();
+            var conexao = _context.GetConexao();
+
+            DateTime inicio = dataInicio ?? new DateTime(DateTime.Now.Year, 1, 1);
+            DateTime fim = dataFim ?? DateTime.Now.Date.AddDays(1).AddTicks(-1);
+
+            if (dataFim.HasValue && dataFim.Value.TimeOfDay == TimeSpan.Zero)
+            {
+                fim = dataFim.Value.Date.AddDays(1).AddTicks(-1);
+            }
+
+            // 1. KPIs: Total Faturamento, Total Encomendas, Pendente a Receber
+            using (var cmdKpi = conexao.CreateCommand())
+            {
+                cmdKpi.CommandText = @"
+                    SELECT 
+                        COALESCE(SUM(CASE WHEN p.status = 'pago' THEN e.valor_total WHEN p.status = 'sinal_pago' THEN p.valor_sinal ELSE (e.valor_total - COALESCE(p.saldo_devedor, e.valor_total)) END), 0) as faturamento_total,
+                        COUNT(DISTINCT e.id) as total_encomendas,
+                        COALESCE(SUM(CASE WHEN e.status_enum != 3 AND (p.status IS NULL OR p.status = 'pendente' OR p.saldo_devedor > 0) THEN COALESCE(p.saldo_devedor, e.valor_total) ELSE 0 END), 0) as pendente_receber
+                    FROM encomenda e
+                    LEFT JOIN pagamento p ON p.encomenda_id = e.id
+                    WHERE e.status_enum != 3
+                      AND e.data_retirada >= @inicio AND e.data_retirada <= @fim";
+
+                cmdKpi.Parameters.AddWithValue("@inicio", inicio);
+                cmdKpi.Parameters.AddWithValue("@fim", fim);
+
+                using var dr = cmdKpi.ExecuteReader();
+                if (dr.Read())
+                {
+                    result.FaturamentoTotal = dr.GetDecimal(dr.GetOrdinal("faturamento_total"));
+                    result.TotalEncomendas = dr.GetInt32(dr.GetOrdinal("total_encomendas"));
+                    result.PendenteAReceber = dr.GetDecimal(dr.GetOrdinal("pendente_receber"));
+                    result.TicketMedio = result.TotalEncomendas > 0 ? Math.Round(result.FaturamentoTotal / result.TotalEncomendas, 2) : 0m;
+                }
+            }
+
+            // 2. Ranking de Produtos Mais Vendidos
+            using (var cmdProd = conexao.CreateCommand())
+            {
+                cmdProd.CommandText = @"
+                    SELECT 
+                        ie.produto_id, 
+                        pr.nome as produto_nome, 
+                        SUM(ie.quantidade) as qtd_vendida, 
+                        SUM(ie.quantidade * ie.preco_no_ato) as total_arrecadado
+                    FROM item_encomenda ie
+                    JOIN encomenda e ON ie.encomenda_id = e.id
+                    JOIN produto pr ON ie.produto_id = pr.id
+                    WHERE e.status_enum != 3
+                      AND e.data_retirada >= @inicio AND e.data_retirada <= @fim
+                    GROUP BY ie.produto_id, pr.nome
+                    ORDER BY qtd_vendida DESC
+                    LIMIT 10";
+
+                cmdProd.Parameters.AddWithValue("@inicio", inicio);
+                cmdProd.Parameters.AddWithValue("@fim", fim);
+
+                using var dr = cmdProd.ExecuteReader();
+                while (dr.Read())
+                {
+                    result.ProdutosMaisVendidos.Add(new BackEnd.Controllers.DTOS.ProdutoMaisVendidoDTO
+                    {
+                        ProdutoId = dr.GetInt32(dr.GetOrdinal("produto_id")),
+                        ProdutoNome = dr.GetString(dr.GetOrdinal("produto_nome")),
+                        QuantidadeVendida = Convert.ToInt32(dr.GetInt64(dr.GetOrdinal("qtd_vendida"))),
+                        ValorArrecadado = dr.GetDecimal(dr.GetOrdinal("total_arrecadado"))
+                    });
+                }
+            }
+
+            // 3. Proporção por Forma de Pagamento e Faturamento por Categoria Financeira
+            using (var cmdForma = conexao.CreateCommand())
+            {
+                cmdForma.CommandText = @"
+                    SELECT 
+                        COALESCE(NULLIF(TRIM(p.forma_pagamento), ''), 'Balcão / Presencial') as forma_pagamento, 
+                        COUNT(*) as quantidade, 
+                        SUM(CASE WHEN p.status = 'pago' THEN e.valor_total WHEN p.status = 'sinal_pago' THEN p.valor_sinal ELSE (e.valor_total - COALESCE(p.saldo_devedor, e.valor_total)) END) as valor_total
+                    FROM encomenda e
+                    LEFT JOIN pagamento p ON p.encomenda_id = e.id
+                    WHERE e.status_enum != 3
+                      AND (p.status = 'pago' OR p.status = 'sinal_pago')
+                      AND e.data_retirada >= @inicio AND e.data_retirada <= @fim
+                    GROUP BY COALESCE(NULLIF(TRIM(p.forma_pagamento), ''), 'Balcão / Presencial')
+                    ORDER BY valor_total DESC";
+
+                cmdForma.Parameters.AddWithValue("@inicio", inicio);
+                cmdForma.Parameters.AddWithValue("@fim", fim);
+
+                using var dr = cmdForma.ExecuteReader();
+                while (dr.Read())
+                {
+                    string forma = dr.GetString(dr.GetOrdinal("forma_pagamento"));
+                    int qtd = Convert.ToInt32(dr.GetInt64(dr.GetOrdinal("quantidade")));
+                    decimal total = dr.GetDecimal(dr.GetOrdinal("valor_total"));
+
+                    result.PagamentosPorForma.Add(new BackEnd.Controllers.DTOS.PagamentoFormaDTO
+                    {
+                        FormaPagamento = forma,
+                        Quantidade = qtd,
+                        ValorTotal = total
+                    });
+
+                    string formaLower = forma.ToLower();
+                    if (formaLower.Contains("dinheiro"))
+                    {
+                        result.FaturamentoDinheiro += total;
+                    }
+                    else if (formaLower.Contains("cart") || formaLower.Contains("crédito") || formaLower.Contains("débito"))
+                    {
+                        result.FaturamentoCartao += total;
+                    }
+                    else if (formaLower.Contains("pix"))
+                    {
+                        result.FaturamentoPix += total;
+                    }
+                    else if (formaLower.Contains("mercado pago"))
+                    {
+                        result.FaturamentoMercadoPago += total;
+                    }
+                }
+            }
+
+            // 4. Evolução do Faturamento por Dia
+            using (var cmdDia = conexao.CreateCommand())
+            {
+                cmdDia.CommandText = @"
+                    SELECT 
+                        TO_CHAR(e.data_retirada, 'YYYY-MM-DD') as dia_str, 
+                        SUM(CASE WHEN p.status = 'pago' THEN e.valor_total WHEN p.status = 'sinal_pago' THEN p.valor_sinal ELSE (e.valor_total - COALESCE(p.saldo_devedor, e.valor_total)) END) as valor_dia, 
+                        COUNT(DISTINCT e.id) as qtd_dia
+                    FROM encomenda e
+                    LEFT JOIN pagamento p ON p.encomenda_id = e.id
+                    WHERE e.status_enum != 3
+                      AND (p.status = 'pago' OR p.status = 'sinal_pago')
+                      AND e.data_retirada >= @inicio AND e.data_retirada <= @fim
+                    GROUP BY TO_CHAR(e.data_retirada, 'YYYY-MM-DD')
+                    ORDER BY dia_str ASC";
+
+                cmdDia.Parameters.AddWithValue("@inicio", inicio);
+                cmdDia.Parameters.AddWithValue("@fim", fim);
+
+                using var dr = cmdDia.ExecuteReader();
+                while (dr.Read())
+                {
+                    result.EvolucaoFaturamento.Add(new BackEnd.Controllers.DTOS.EvolucaoDiaDTO
+                    {
+                        Data = dr.GetString(dr.GetOrdinal("dia_str")),
+                        ValorTotal = dr.GetDecimal(dr.GetOrdinal("valor_dia")),
+                        TotalEncomendas = Convert.ToInt32(dr.GetInt64(dr.GetOrdinal("qtd_dia")))
+                    });
+                }
+            }
+
+            return result;
         }
 
         private static Pagamento MapearPagamento(NpgsqlDataReader dr)

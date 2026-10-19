@@ -134,5 +134,188 @@ namespace BackEnd.Controllers
 
             return BadRequest("Não foi possível atualizar o perfil.");
         }
+
+        /// <summary>
+        /// Solicita o envio de token de 6 dígitos por e-mail para recuperação de senha
+        /// </summary>
+        [HttpPost("solicitar-recuperacao-senha")]
+        public async Task<IActionResult> SolicitarRecuperacaoSenha([FromBody] SolicitarRecuperacaoSenhaDTO dto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dto.Email))
+                {
+                    return BadRequest(new { erro = "E-mail é obrigatório." });
+                }
+
+                await _services.SolicitarRecuperacaoSenhaAsync(dto.Email);
+                return Ok(new { mensagem = "Se o e-mail estiver cadastrado em nosso sistema, um código de verificação de 6 dígitos foi enviado." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao processar solicitação de recuperação de senha.", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Redefine a senha do cliente validando o token de 6 dígitos enviado por e-mail
+        /// </summary>
+        [HttpPost("redefinir-senha")]
+        public IActionResult RedefinirSenha([FromBody] RedefinirSenhaDTO dto)
+        {
+            try
+            {
+                bool sucesso = _services.RedefinirSenha(dto.Email, dto.CodigoToken, dto.NovaSenha);
+                if (sucesso)
+                {
+                    return Ok(new { mensagem = "Senha redefinida com sucesso! Você já pode realizar o login." });
+                }
+                return BadRequest(new { erro = "Não foi possível redefinir a senha." });
+            }
+            catch (ArgumentException argEx)
+            {
+                return BadRequest(new { erro = argEx.Message });
+            }
+            catch (InvalidOperationException invEx)
+            {
+                return BadRequest(new { erro = invEx.Message });
+            }
+            catch (KeyNotFoundException knfEx)
+            {
+                return NotFound(new { erro = knfEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro interno ao redefinir a senha.", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Dispara token de confirmação para o e-mail do cliente logado para exclusão de conta
+        /// </summary>
+        [Authorize]
+        [HttpPost("solicitar-exclusao-conta")]
+        public async Task<IActionResult> SolicitarExclusaoConta()
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized("Usuário não autenticado.");
+                }
+
+                await _services.SolicitarExclusaoContaAsync(userId);
+                return Ok(new { mensagem = "Código de confirmação de exclusão enviado para o seu e-mail." });
+            }
+            catch (KeyNotFoundException knfEx)
+            {
+                return NotFound(new { erro = knfEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao solicitar exclusão de conta.", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Valida o token de 6 dígitos e executa a desativação (soft delete) da conta do cliente logado
+        /// </summary>
+        [Authorize]
+        [HttpPost("confirmar-exclusao-conta")]
+        public IActionResult ConfirmarExclusaoConta([FromBody] ConfirmarExclusaoContaDTO dto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized("Usuário não autenticado.");
+                }
+
+                bool sucesso = _services.ConfirmarExclusaoConta(userId, dto.CodigoToken);
+                if (sucesso)
+                {
+                    return Ok(new { mensagem = "Sua conta foi desativada com sucesso. Sentiremos sua falta!" });
+                }
+                return BadRequest(new { erro = "Não foi possível confirmar a exclusão da conta." });
+            }
+            catch (ArgumentException argEx)
+            {
+                return BadRequest(new { erro = argEx.Message });
+            }
+            catch (InvalidOperationException invEx)
+            {
+                return BadRequest(new { erro = invEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao confirmar exclusão de conta.", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Solicita o envio de token de 6 dígitos por e-mail para autorizar alterações no perfil ou senha do cliente logado
+        /// </summary>
+        [Authorize]
+        [HttpPost("solicitar-codigo-alteracao")]
+        public async Task<IActionResult> SolicitarCodigoAlteracao()
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized("Usuário não autenticado.");
+                }
+
+                await _services.SolicitarCodigoAlteracaoPerfilAsync(userId);
+                return Ok(new { mensagem = "Código de confirmação de 6 dígitos enviado para o seu e-mail." });
+            }
+            catch (KeyNotFoundException knfEx)
+            {
+                return NotFound(new { erro = knfEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao solicitar código de alteração de perfil.", detalhe = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Atualiza os dados do perfil (e opcionalmente a senha) do cliente logado mediante verificação de token de 6 dígitos
+        /// </summary>
+        [Authorize]
+        [HttpPut("perfil-com-codigo")]
+        public IActionResult AlterarPerfilComCodigo([FromBody] AlterarPerfilComCodigoDTO dto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized("Usuário não autenticado.");
+                }
+
+                bool sucesso = _services.AlterarPerfilComCodigo(userId, dto);
+                if (sucesso)
+                {
+                    return Ok(new { mensagem = "Perfil e preferências atualizados com sucesso!" });
+                }
+                return BadRequest(new { erro = "Não foi possível atualizar os dados do perfil." });
+            }
+            catch (ArgumentException argEx)
+            {
+                return BadRequest(new { erro = argEx.Message });
+            }
+            catch (InvalidOperationException invEx)
+            {
+                return BadRequest(new { erro = invEx.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao atualizar perfil com código.", detalhe = ex.Message });
+            }
+        }
     }
 }

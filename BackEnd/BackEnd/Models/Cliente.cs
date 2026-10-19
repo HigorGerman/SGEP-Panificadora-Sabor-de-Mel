@@ -12,4 +12,6 @@ public class Cliente
     public bool RestricaoLactose { get; set; }
     public bool RestricaoAcucar { get; set; }
     public bool Ativo { get; set; } = true;
+    public bool BloqueadoEncomendas { get; set; } = false;
+    public string? MotivoBloqueio { get; set; }
 }

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   FaSearch, FaShoppingCart, FaShieldAlt, FaCreditCard, 
   FaExclamationTriangle, FaTimes, FaCalendarAlt, FaEdit, 
-  FaStore, FaCheckCircle
+  FaStore, FaCheckCircle, FaTimesCircle
 } from 'react-icons/fa';
 import api from '@/services/api';
 import { getProductImageUrl } from '../catalogo/page';
@@ -110,6 +110,22 @@ function NovaEncomendaContent() {
   const [observacaoGeral, setObservacaoGeral] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Situação Financeira / Inadimplência do Cliente Cadastrado
+  const [situacaoCliente, setSituacaoCliente] = useState<{
+    clienteId?: number;
+    nome?: string;
+    cpf?: string;
+    bloqueadoEncomendas: boolean;
+    motivoBloqueio?: string;
+    qtdEncomendasPendentes: number;
+    qtdEncomendasAtraso: number;
+    valorTotalDevido: number;
+    podeRealizarEncomenda: boolean;
+    alertaPendenciaAnterior: boolean;
+    mensagem?: string;
+  } | null>(null);
+  const [orderWarningMsg, setOrderWarningMsg] = useState<string | null>(null);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -128,6 +144,7 @@ function NovaEncomendaContent() {
 
       if (tipo === 'Cliente' && uId) {
         reqs.push(api.get(`/Clientes/${uId}`).catch(() => ({ data: null })));
+        reqs.push(api.get(`/api/clientes/${uId}/verificar-situacao`).catch(() => ({ data: null })));
       }
 
       const results = await Promise.all(reqs);
@@ -136,8 +153,21 @@ function NovaEncomendaContent() {
       setProdutos(prods);
       setCategorias(results[1].data);
 
-      if (tipo === 'Cliente' && results[2]?.data) {
-        setLoggedClient(results[2].data);
+      if (tipo === 'Cliente') {
+        const clienteData = results[2]?.data;
+        if (clienteData) {
+          setLoggedClient(clienteData);
+        }
+
+        const situacaoData = results[3]?.data;
+        if (situacaoData) {
+          setSituacaoCliente(situacaoData);
+        } else if (clienteData?.cpf) {
+          // Fallback por CPF caso a consulta por ID não retorne
+          api.get(`/api/clientes/verificar-cpf/${encodeURIComponent(clienteData.cpf)}`)
+            .then(res => setSituacaoCliente(res.data))
+            .catch(() => {});
+        }
       } else if (uNome) {
         setLoggedClient({
           id: uId ? parseInt(uId) : 0,
@@ -352,14 +382,25 @@ function NovaEncomendaContent() {
       return;
     }
 
+    const isBloqueado = Boolean(
+      situacaoCliente?.bloqueadoEncomendas || 
+      ((situacaoCliente?.qtdEncomendasPendentes || 0) >= 2)
+    );
+
+    if (isBloqueado) {
+      alert("Atenção: Seu cadastro possui restrições ou pendências em aberto que impossibilitam novas encomendas online. Favor contactar o balcão da panificadora.");
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Criar a Encomenda no Backend
       const payloadEncomenda = {
-        clienteId: tipo === 'Cliente' && uId ? parseInt(uId) : null,
+        clienteId: tipo === 'Cliente' && uId ? parseInt(uId) : (loggedClient?.id || null),
         usuarioId: tipo === 'Usuario' && uId ? parseInt(uId) : null,
         dataEntrega: new Date(dataEntrega).toISOString(),
         observacao: observacaoGeral,
+        cpf: loggedClient?.cpf || undefined,
         itens: cart.map(item => ({
           produtoId: item.produtoId,
           quantidade: item.quantidade,
@@ -369,6 +410,9 @@ function NovaEncomendaContent() {
 
       const resEnc = await api.post('/api/Encomenda', payloadEncomenda);
       let encomendaId = resEnc.data?.id;
+      if (resEnc.data?.aviso) {
+        setOrderWarningMsg(resEnc.data.aviso);
+      }
 
       if (!encomendaId) {
         const resList = await api.get('/api/Encomenda');
@@ -435,6 +479,16 @@ function NovaEncomendaContent() {
   });
 
   const clienteHasRestricoes = loggedClient && (loggedClient.restricaoGluten || loggedClient.restricaoLactose || loggedClient.restricaoAcucar);
+
+  const clienteBloqueado = Boolean(
+    situacaoCliente?.bloqueadoEncomendas || 
+    ((situacaoCliente?.qtdEncomendasPendentes || 0) >= 2)
+  );
+
+  const temAlertaPendencia = Boolean(
+    !clienteBloqueado && 
+    (situacaoCliente?.qtdEncomendasPendentes === 1 || situacaoCliente?.alertaPendenciaAnterior)
+  );
 
   return (
     <div className={styles.container}>
@@ -672,11 +726,41 @@ function NovaEncomendaContent() {
               </div>
             </div>
 
+            {/* Aviso no Carrinho: Bloqueio / Inadimplência */}
+            {clienteBloqueado && (
+              <div className={styles.cartBlockedNotice}>
+                <div className={styles.cartNoticeHeader}>
+                  <FaTimesCircle style={{ color: '#DC2626', fontSize: '1.2rem' }} />
+                  <span>Pedidos Online Indisponíveis</span>
+                </div>
+                <p className={styles.cartNoticeText}>
+                  {situacaoCliente?.bloqueadoEncomendas
+                    ? (situacaoCliente.motivoBloqueio 
+                        ? `Restrição cadastral: "${situacaoCliente.motivoBloqueio}". Favor contactar o balcão da panificadora.`
+                        : "Cliente temporariamente impossibilitado de realizar encomendas online. Favor contactar o balcão da panificadora.")
+                    : `Identificamos ${situacaoCliente?.qtdEncomendasPendentes} encomendas anteriores com pagamento pendente no balcão (Total: R$ ${situacaoCliente?.valorTotalDevido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}). Novos pedidos estão bloqueados até a quitação das pendências.`}
+                </p>
+              </div>
+            )}
+
+            {/* Aviso no Carrinho: 1 Pendência (Alerta Amigável) */}
+            {temAlertaPendencia && (
+              <div className={styles.cartWarningNotice}>
+                <div className={styles.cartNoticeHeader}>
+                  <FaExclamationTriangle style={{ color: '#D97706', fontSize: '1.1rem' }} />
+                  <span>Aviso de Pendência Anterior</span>
+                </div>
+                <p className={styles.cartNoticeText}>
+                  Atenção: Identificamos uma encomenda anterior pendente de confirmação no balcão. Você pode concluir seu pedido normalmente, mas solicitamos verificar a pendência ao comparecer à panificadora.
+                </p>
+              </div>
+            )}
+
             {/* Botão de Ação Dinâmico (Depende da Opção Selecionada) */}
             {tipoPagamento === 'mercadopago' ? (
               <button
                 className={styles.btnMercadoPago}
-                disabled={cart.length === 0 || loading}
+                disabled={cart.length === 0 || loading || clienteBloqueado}
                 onClick={handleFinalizarEncomenda}
               >
                 <FaCreditCard />
@@ -685,7 +769,7 @@ function NovaEncomendaContent() {
             ) : (
               <button
                 className={styles.btnPresencial}
-                disabled={cart.length === 0 || loading}
+                disabled={cart.length === 0 || loading || clienteBloqueado}
                 onClick={handleFinalizarEncomenda}
               >
                 <FaStore />
@@ -793,10 +877,40 @@ function NovaEncomendaContent() {
               </div>
             </div>
 
+            {/* Aviso no Carrinho Mobile: Bloqueio / Inadimplência */}
+            {clienteBloqueado && (
+              <div className={styles.cartBlockedNotice}>
+                <div className={styles.cartNoticeHeader}>
+                  <FaTimesCircle style={{ color: '#DC2626', fontSize: '1.15rem' }} />
+                  <span>Pedidos Online Indisponíveis</span>
+                </div>
+                <p className={styles.cartNoticeText}>
+                  {situacaoCliente?.bloqueadoEncomendas
+                    ? (situacaoCliente.motivoBloqueio 
+                        ? `Restrição: "${situacaoCliente.motivoBloqueio}". Favor contactar o balcão.`
+                        : "Cliente temporariamente impossibilitado de realizar encomendas online. Favor contactar o balcão da panificadora.")
+                    : `Identificamos ${situacaoCliente?.qtdEncomendasPendentes} encomendas anteriores com pagamento pendente no balcão (Total: R$ ${situacaoCliente?.valorTotalDevido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}). Novos pedidos estão bloqueados.`}
+                </p>
+              </div>
+            )}
+
+            {/* Aviso no Carrinho Mobile: 1 Pendência (Alerta Amigável) */}
+            {temAlertaPendencia && (
+              <div className={styles.cartWarningNotice}>
+                <div className={styles.cartNoticeHeader}>
+                  <FaExclamationTriangle style={{ color: '#D97706', fontSize: '1.05rem' }} />
+                  <span>Aviso de Pendência Anterior</span>
+                </div>
+                <p className={styles.cartNoticeText}>
+                  Atenção: Identificamos uma encomenda anterior pendente no balcão. Você pode concluir seu pedido normalmente.
+                </p>
+              </div>
+            )}
+
             {tipoPagamento === 'mercadopago' ? (
               <button
                 className={styles.btnMercadoPago}
-                disabled={loading}
+                disabled={loading || clienteBloqueado}
                 onClick={() => {
                   setBottomSheetOpen(false);
                   handleFinalizarEncomenda();
@@ -808,7 +922,7 @@ function NovaEncomendaContent() {
             ) : (
               <button
                 className={styles.btnPresencial}
-                disabled={loading}
+                disabled={loading || clienteBloqueado}
                 onClick={() => {
                   setBottomSheetOpen(false);
                   handleFinalizarEncomenda();
@@ -842,8 +956,14 @@ function NovaEncomendaContent() {
                 💰 <strong>Valor a Pagar no Balcão:</strong> R$ {createdEncomendaInfo.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <div style={{ fontSize: '0.85rem', color: '#7A1C31', fontWeight: '700', marginTop: '4px' }}>
-                ℹ️ Lembre-se de realizar o pagamento diretamente no caixa da Panificadora Sabor de Mel momento da retirada.
+                ℹ️ Lembre-se de realizar o pagamento diretamente no caixa da Panificadora Sabor de Mel no momento da retirada.
               </div>
+
+              {orderWarningMsg && (
+                <div style={{ marginTop: '10px', background: '#FFFBEB', border: '1px solid #FDE68A', padding: '10px', borderRadius: '8px', color: '#92400E', fontSize: '0.88rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaExclamationTriangle /> {orderWarningMsg}
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

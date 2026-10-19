@@ -3,45 +3,78 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #FDFCF5; /* Padaria Creme */
+  background-color: #FAF8F5; /* Off-white / Creme perfeito */
   width: 100%;
+  padding: 40px 20px;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
 .loginCard {
-  background: white;
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  background: #FFFFFF;
+  padding: 40px 36px;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(91, 10, 26, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
+  border: 1px solid #F3EFEA;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .header {
   text-align: center;
-  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+  width: 100%;
 }
 
-.logoImg {
-  margin-bottom: 15px;
+.topPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #5B0A1A;
+  color: #FFFFFF;
+  padding: 8px 18px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  box-shadow: 0 6px 16px rgba(91, 10, 26, 0.25);
+  margin-bottom: 20px;
+  text-transform: uppercase;
 }
 
 .title {
-  color: #5B0A1A;
-  font-size: 28px;
+  color: #4A0512;
+  font-size: 30px;
   font-weight: 900;
-  margin: 0;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  color: #718096;
+  color: #6B7280;
   font-size: 14px;
-  margin: 5px 0 0 0;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.goldDivider {
+  width: 45px;
+  height: 4px;
+  background-color: #EAB308;
+  border-radius: 2px;
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
 .inputGroup {
@@ -52,8 +85,8 @@
 
 .inputGroup label {
   font-size: 14px;
-  font-weight: 600;
-  color: #4a5568;
+  font-weight: 700;
+  color: #374151;
 }
 
 .inputWrapper {
@@ -64,64 +97,260 @@
 
 .inputIcon {
   position: absolute;
-  left: 12px;
-  color: #a0aec0;
+  left: 16px;
+  color: #9CA3AF;
 }
 
-.inputGroup input {
-  padding: 12px 12px 12px 40px; /* Espaço para o ícone */
-  border: 1px solid #cbd5e0;
-  border-radius: 8px;
-  font-size: 16px;
+.inputWrapper input {
+  padding: 14px 44px 14px 46px;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 16px;
+  font-size: 14px;
   outline: none;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   width: 100%;
   box-sizing: border-box;
+  color: #1F2937;
+  background-color: #FFFFFF;
 }
 
-.inputGroup input:focus {
+.inputWrapper input::placeholder {
+  color: #9CA3AF;
+}
+
+.inputWrapper input:focus {
   border-color: #5B0A1A;
-  box-shadow: 0 0 0 2px rgba(91, 10, 26, 0.1);
+  box-shadow: 0 0 0 3px rgba(91, 10, 26, 0.08);
+}
+
+.inputError {
+  border-color: #DC2626 !important;
 }
 
 .eyeIcon {
   position: absolute;
-  right: 12px;
-  color: #a0aec0;
+  right: 16px;
+  color: #9CA3AF;
   cursor: pointer;
+  transition: color 0.2s;
 }
 
-.toastError {
-  color: #c53030;
-  background: #fff5f5;
-  border: 1px solid #feb2b2;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 5px;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 500;
+.eyeIcon:hover {
+  color: #374151;
+}
+
+.forgotWrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.forgotBtn {
+  background: none;
+  border: none;
+  color: #5B0A1A;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.forgotBtn:hover {
+  color: #800E2B;
+  text-decoration: underline;
 }
 
 .loginBtn {
-  background-color: #5B0A1A;
-  color: white;
-  padding: 14px;
+  background: #5B0A1A;
+  color: #FFFFFF;
+  padding: 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: 16px;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 20px rgba(91, 10, 26, 0.2);
+  width: 100%;
+  margin-top: 6px;
 }
 
 .loginBtn:hover {
-  opacity: 0.9;
+  background: #730C21;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(91, 10, 26, 0.28);
+}
+
+.loginBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .footer {
   text-align: center;
-  margin-top: 20px;
-  font-size: 12px;
-  color: #999;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #6B7280;
+}
+
+.footer a {
+  color: #5B0A1A;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+/* Toast / Banners de Alerta Embutidos */
+.toastError {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #991B1B;
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.toastSuccess {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #166534;
+  background: #F0FDF4;
+  border: 1px solid #86EFAC;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Modal de Esqueci Senha */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modalCard {
+  background: #FFFFFF;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #F3EFEA;
+  padding-bottom: 14px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  color: #4A0512;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.closeBtn:hover {
+  color: #1F2937;
+}
+
+.stepInfo {
+  font-size: 14px;
+  color: #4B5563;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.codeTokenInput {
+  font-size: 26px !important;
+  letter-spacing: 8px;
+  text-align: center;
+  font-weight: 800;
+  padding: 12px !important;
+  color: #5B0A1A;
+  background: #FFF5F5;
+  border: 2px dashed #5B0A1A !important;
+  border-radius: 14px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.cancelBtn {
+  background: #F3F4F6;
+  color: #4B5563;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #E5E7EB;
+}
+
+.modalConfirmBtn {
+  background: #5B0A1A;
+  color: #FFFFFF;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modalConfirmBtn:hover {
+  background: #730C21;
 }

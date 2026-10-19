@@ -1,5 +1,6 @@
 "use client"
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FiArchive, FiSearch, FiPrinter, FiCalendar } from 'react-icons/fi';
 import api from '@/services/api';
 import styles from './historico.module.css';
@@ -26,17 +27,64 @@ interface Encomenda {
   itens: ItemEncomenda[];
 }
 
-export default function HistoricoPage() {
+function HistoricoContent() {
+  const searchParams = useSearchParams();
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [modalEnc, setModalEnc] = useState<Encomenda | null>(null);
+  const [banner, setBanner] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     carregarHistorico();
-  }, []);
+    verificarRetornoMercadoPago();
+  }, [searchParams]);
+
+  const verificarRetornoMercadoPago = async () => {
+    const statusParam = searchParams.get('status') || searchParams.get('collection_status');
+    const paymentIdParam = searchParams.get('payment_id');
+    const externalRef = searchParams.get('external_reference');
+    const preferenceId = searchParams.get('preference_id');
+    const paymentType = searchParams.get('payment_type');
+
+    if (!statusParam && !paymentIdParam) return;
+
+    if (statusParam === 'approved' || statusParam === 'sucesso') {
+      try {
+        await api.post('/api/pagamentos/confirmar-retorno', {
+          paymentId: paymentIdParam ? parseInt(paymentIdParam) : null,
+          status: 'approved',
+          externalReference: externalRef || null,
+          preferenceId: preferenceId || null,
+          paymentType: paymentType || 'mercadopago'
+        });
+
+        setBanner({
+          type: 'success',
+          message: `🎉 Pagamento aprovado com sucesso pelo Mercado Pago! Seu pedido #${externalRef || ''} foi registrado e atualizado.`
+        });
+      } catch (err) {
+        console.warn("Aviso ao confirmar retorno do MP:", err);
+      } finally {
+        window.history.replaceState({}, '', '/historico');
+        carregarHistorico();
+      }
+    } else if (statusParam === 'pending' || statusParam === 'pendente' || statusParam === 'in_process') {
+      setBanner({
+        type: 'warning',
+        message: '⏳ Pagamento via Mercado Pago está em processamento pela instituição bancária.'
+      });
+      window.history.replaceState({}, '', '/historico');
+    } else if (statusParam === 'failure' || statusParam === 'falha' || statusParam === 'rejected') {
+      setBanner({
+        type: 'error',
+        message: '❌ O pagamento pelo Mercado Pago não foi aprovado ou foi cancelado.'
+      });
+      window.history.replaceState({}, '', '/historico');
+    }
+  };
 
   const carregarHistorico = async () => {
     try {
@@ -112,6 +160,17 @@ export default function HistoricoPage() {
         </h1>
         <p className={styles.subtitle}>Consulte pedidos finalizados (Entregues ou Cancelados).</p>
       </div>
+
+      {banner && (
+        <div className={
+          banner.type === 'success' ? styles.bannerSuccess :
+          banner.type === 'warning' ? styles.bannerWarning :
+          styles.bannerError
+        }>
+          <span>{banner.message}</span>
+          <button className={styles.bannerClose} onClick={() => setBanner(null)}>&times;</button>
+        </div>
+      )}
 
       <div className={styles.filtersBox}>
         <div className={styles.searchField}>
@@ -269,3 +328,12 @@ export default function HistoricoPage() {
     </div>
   );
 }
+
+export default function HistoricoPage() {
+  return (
+    <Suspense fallback={<div className={styles.container}><p style={{padding: 40}}>Carregando histórico...</p></div>}>
+      <HistoricoContent />
+    </Suspense>
+  );
+}
+

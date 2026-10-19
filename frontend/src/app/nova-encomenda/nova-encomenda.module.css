@@ -563,3 +563,65 @@
     display: block;
   }
 }
+
+/* Alertas de Inadimplência e Bloqueio no Carrinho */
+.cartBlockedNotice {
+  background: #FFF5F5;
+  border: 1.5px solid #FEB2B2;
+  border-left: 5px solid #E53E3E;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  color: #9B2C2C;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  animation: shake 0.3s ease-in-out;
+}
+
+.cartWarningNotice {
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  border-left: 5px solid #D97706;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  color: #92400E;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.cartNoticeHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+}
+
+.cartNoticeText {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.blockedNoticePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FEE2E2;
+  color: #991B1B;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-top: 6px;
+}
+

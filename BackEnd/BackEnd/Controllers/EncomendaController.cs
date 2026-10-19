@@ -10,10 +10,12 @@ namespace BackEnd.Controllers
     public class EncomendaController : ControllerBase
     {
         private readonly EncomendaServices _encomendaServices;
+        private readonly ClienteServices _clienteServices;
 
-        public EncomendaController(EncomendaServices encomendaServices)
+        public EncomendaController(EncomendaServices encomendaServices, ClienteServices clienteServices)
         {
             _encomendaServices = encomendaServices;
+            _clienteServices = clienteServices;
         }
 
         [HttpPost]
@@ -21,9 +23,49 @@ namespace BackEnd.Controllers
         {
             try
             {
+                // 1. Validação de Inadimplência e Bloqueio de Clientes
+                string? avisoPendencia = null;
+                int? clienteIdResolvido = dto.ClienteId;
+
+                if (dto.ClienteId.HasValue || !string.IsNullOrWhiteSpace(dto.Cpf))
+                {
+                    var situacao = _clienteServices.VerificarSituacao(dto.ClienteId, dto.Cpf);
+                    if (!clienteIdResolvido.HasValue && situacao.ClienteId.HasValue)
+                    {
+                        clienteIdResolvido = situacao.ClienteId;
+                    }
+
+                    // Se bloqueado_encomendas == true: retornar 403 Forbidden
+                    if (situacao.BloqueadoEncomendas)
+                    {
+                        return StatusCode(StatusCodes.Status403Forbidden, new { 
+                            message = "Cliente temporariamente impossibilitado de realizar encomendas online. Favor contactar o balcão da panificadora.",
+                            motivo = situacao.MotivoBloqueio,
+                            bloqueado = true
+                        });
+                    }
+
+                    // Se possuir 2 ou mais encomendas pendentes/não pagas: bloquear automaticamente
+                    if (situacao.QtdEncomendasPendentes >= 2)
+                    {
+                        return BadRequest(new { 
+                            message = $"Cliente possui {situacao.QtdEncomendasPendentes} encomendas pendentes/não pagas anteriores. Regularize as pendências no balcão antes de realizar novos pedidos.",
+                            qtdPendencias = situacao.QtdEncomendasPendentes,
+                            valorTotalDevido = situacao.ValorTotalDevido,
+                            bloqueioAutomatico = true
+                        });
+                    }
+
+                    // Se possuir 1 encomenda pendente: emitir alerta no payload de retorno
+                    if (situacao.QtdEncomendasPendentes == 1)
+                    {
+                        avisoPendencia = "Atenção: Identificamos uma encomenda anterior pendente de confirmação no balcão.";
+                    }
+                }
+
                 var encomenda = new Encomenda
                 {
-                    ClienteId = dto.ClienteId,
+                    ClienteId = clienteIdResolvido,
                     UsuarioId = dto.UsuarioId,
                     DataEntrega = dto.DataEntrega,
                     Observacao = dto.Observacao,
@@ -38,7 +80,13 @@ namespace BackEnd.Controllers
 
                 var sucesso = _encomendaServices.Criar(encomenda);
                 if (sucesso)
-                    return Ok(new { message = "Encomenda criada com sucesso!", id = encomenda.Id });
+                {
+                    return Ok(new { 
+                        message = "Encomenda criada com sucesso!", 
+                        id = encomenda.Id,
+                        aviso = avisoPendencia
+                    });
+                }
 
                 return BadRequest(new { message = "Erro ao criar encomenda." });
             }
