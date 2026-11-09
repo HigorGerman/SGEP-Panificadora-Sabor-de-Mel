@@ -220,6 +220,7 @@ export default function PerfilPage() {
       localStorage.removeItem('usuario_nome');
       localStorage.removeItem('usuario_role');
       localStorage.removeItem('usuario_tipo');
+      localStorage.removeItem('usuario_token');
       window.dispatchEvent(new Event('storage'));
 
       router.push('/login');

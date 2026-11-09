@@ -17,16 +17,26 @@ namespace BackEnd.Services
     {
         private readonly IPagamentoRepository _pagamentoRepository;
         private readonly EncomendaRepository _encomendaRepository;
+        private readonly IConfiguration _configuration;
 
-        public PagamentoService(IPagamentoRepository pagamentoRepository, EncomendaRepository encomendaRepository)
+        public PagamentoService(IPagamentoRepository pagamentoRepository, EncomendaRepository encomendaRepository, IConfiguration configuration)
         {
             _pagamentoRepository = pagamentoRepository;
             _encomendaRepository = encomendaRepository;
+            _configuration = configuration;
         }
 
         public decimal CalcularSinal(decimal valorTotal)
         {
             return Math.Round(valorTotal * 0.50m, 2);
+        }
+
+        private string ObterFrontendBaseUrl()
+        {
+            var url = Environment.GetEnvironmentVariable("FRONTEND_URL")
+                      ?? _configuration["FrontendUrl"]
+                      ?? "http://localhost:3000";
+            return url.TrimEnd('/');
         }
 
         public async Task<GerarPreferenciaResponseDTO> GerarPreferenciaAsync(GerarPreferenciaRequestDTO request)
@@ -69,9 +79,9 @@ namespace BackEnd.Services
                 ExternalReference = encomenda.Id.ToString(),
                 BackUrls = new PreferenceBackUrlsRequest
                 {
-                    Success = "http://localhost:3000/minhas-encomendas?status=sucesso",
-                    Failure = "http://localhost:3000/minhas-encomendas?status=falha",
-                    Pending = "http://localhost:3000/minhas-encomendas?status=pendente"
+                    Success = $"{ObterFrontendBaseUrl()}/minhas-encomendas?status=sucesso",
+                    Failure = $"{ObterFrontendBaseUrl()}/minhas-encomendas?status=falha",
+                    Pending = $"{ObterFrontendBaseUrl()}/minhas-encomendas?status=pendente"
                 },
                 AutoReturn = "approved"
             };

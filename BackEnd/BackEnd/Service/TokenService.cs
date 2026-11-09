@@ -8,10 +8,20 @@ namespace BackEnd.Services
 {
     public class TokenService
     {
+        private readonly IConfiguration _configuration;
+
+        public TokenService(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         public string GenerateToken(string id, string role, string nome)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("SuperSecretKeyThatIsAtLeast32BytesLong");
+            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET")
+                            ?? _configuration["Jwt:Key"]
+                            ?? "SuperSecretKeyThatIsAtLeast32BytesLong";
+            var key = Encoding.UTF8.GetBytes(secretKey);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]

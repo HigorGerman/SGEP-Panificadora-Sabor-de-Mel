@@ -28,6 +28,8 @@ frontend/out/
 .env.test.local
 .env.production.local
 frontend/.env*
+!.env.example
+!frontend/.env.example
 
 # Logs
 npm-debug.log*

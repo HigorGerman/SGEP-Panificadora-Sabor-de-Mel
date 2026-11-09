@@ -137,41 +137,12 @@ CREATE TABLE pagamento (
 );
 
 -- ==============================================================================
--- 3. Carga Inicial de Dados (Seed Data)
+-- 3. Carga Inicial de Dados (Apenas Usuário Administrador)
 -- ==============================================================================
 
--- Senha padrão para os seeds abaixo: admin123 (hash BCrypt)
--- Hash gerado: $2a$11$N9qo8uLOuGCKEC7z6F2GyeLw2S07U.3uEw70RntwS6P6qT6TymD/6
-
--- Inserindo Usuário Administrador Inicial
+-- Inserindo Único Usuário Administrador Inicial (Senha: admin123)
 INSERT INTO usuario (usuario_nome, email, senha, perfil_enum, excluido) VALUES
-('Administrador Sabor de Mel', 'admin@sabordemel.com', '$2a$11$N9qo8uLOuGCKEC7z6F2GyeLw2S07U.3uEw70RntwS6P6qT6TymD/6', 0, FALSE),
-('Funcionário de Vendas', 'funcionario@sabordemel.com', '$2a$11$N9qo8uLOuGCKEC7z6F2GyeLw2S07U.3uEw70RntwS6P6qT6TymD/6', 1, FALSE);
-
--- Inserindo Categorias de Produtos
-INSERT INTO categoria (descricao, inativo) VALUES
-('Pães', FALSE),
-('Bolos de Festa', FALSE),
-('Tortas Doces', FALSE),
-('Salgados para Festa', FALSE),
-('Doces e Sobremesas', FALSE);
-
--- Inserindo Clientes de Teste (com diferentes restrições alimentares)
-INSERT INTO cliente (nome, cpf, email, senha, telefone, restricao_gluten, restricao_lactose, restricao_acucar, ativo) VALUES
-('Higor Cliente Comum', '111.222.333-44', 'cliente@sabordemel.com', '$2a$11$N9qo8uLOuGCKEC7z6F2GyeLw2S07U.3uEw70RntwS6P6qT6TymD/6', '(11) 98888-7777', FALSE, FALSE, FALSE, TRUE),
-('Maria Célia (Intolerante Lactose)', '222.333.444-55', 'maria@exemplo.com', NULL, '(11) 97777-6666', FALSE, TRUE, FALSE, TRUE),
-('João Diabético (Sem Açúcar)', '333.444.555-66', 'joao@exemplo.com', NULL, '(11) 96666-5555', FALSE, FALSE, TRUE, TRUE);
-
--- Inserindo Produtos Padrão
-INSERT INTO produto (nome, preco_unitario, categoria_id, imagem_url, descricao, permite_customizacao, template_customizacao, contem_gluten, contem_lactose, contem_acucar) VALUES
-('Pão Francês 50g', 0.80, 1, 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400', 'Clássico pão francês sempre fresquinho e crocante.', FALSE, NULL, TRUE, FALSE, FALSE),
-('Bolo de Festa Personalizado', 60.00, 2, 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400', 'Bolo decorado para aniversários e celebrações. Escolha o recheio e a frase.', TRUE, '["Massa", "Recheio", "Frase Escrita"]'::jsonb, TRUE, TRUE, TRUE),
-('Torta de Morango', 45.00, 3, 'https://images.unsplash.com/photo-1464305795204-6f5bdf7f81b1?w=400', 'Torta doce recheada com creme de confeiteiro e cobertura de morangos frescos.', FALSE, NULL, TRUE, TRUE, TRUE),
-('Cento de Coxinha de Frango', 80.00, 4, 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400', 'Coxinhas de frango desfiado com massa de batata frita super crocante.', FALSE, NULL, TRUE, FALSE, FALSE);
-
--- Inserindo Receita Confidencial (Bolo de Festa Personalizado - ID: 2)
-INSERT INTO receita (produto_id, ingredientes, modo_preparo, rendimento) VALUES
-(2, 'Farinha de trigo, açúcar, ovos, leite condensado, leite integral, chocolate em pó, fermento químico.', '1. Bata as claras em neve.\n2. Misture as gemas, açúcar e manteiga.\n3. Incorpore a farinha de trigo e fermento aos poucos.\n4. Asse o bolo de massa básica.\n5. Prepare o recheio de brigadeiro gourmet com leite condensado e cacau.\n6. Corte a massa ao meio, recheie e aplique a cobertura de chantilly.', '1 bolo de aproximadamente 1.5kg a 2kg');
+('Higor Germano', 'higorgermano43@gmail.com', 'admin123', 0, FALSE);
 
 -- ==============================================================================
 -- Fim do Script SQL

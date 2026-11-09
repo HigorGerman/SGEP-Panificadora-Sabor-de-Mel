@@ -105,7 +105,8 @@ namespace BackEnd.Controllers
                     Id = usuario.Id, 
                     Nome = usuario.UsuarioNome, 
                     Role = ((int)usuario.Perfil).ToString(), 
-                    Tipo = "Usuario" 
+                    Tipo = "Usuario",
+                    Token = token
                 });
             }
 
@@ -120,7 +121,8 @@ namespace BackEnd.Controllers
                     Id = cliente.Id, 
                     Nome = cliente.Nome, 
                     Role = "Cliente", 
-                    Tipo = "Cliente" 
+                    Tipo = "Cliente",
+                    Token = token
                 });
             }
 
@@ -132,8 +134,8 @@ namespace BackEnd.Controllers
             Response.Cookies.Append("jwt", token, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // Idealmente em produção. O SameSite=Strict requer HTTPS se Secure=true na maioria dos browsers modernos (ou localhost).
-                SameSite = SameSiteMode.Strict,
+                Secure = true,
+                SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddHours(8)
             });
         }

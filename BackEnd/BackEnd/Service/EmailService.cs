@@ -132,13 +132,13 @@ namespace BackEnd.Services
 
         private async Task<bool> EnviarEmailAsync(string destinatarioEmail, string assunto, string mensagemHtml, string codigoToken, string tipoToken)
         {
-            var host = _configuration["Smtp:Host"];
-            var portStr = _configuration["Smtp:Port"];
-            var username = _configuration["Smtp:Username"];
-            var password = _configuration["Smtp:Password"];
-            var apiKey = _configuration["Smtp:ApiKey"] ?? password;
-            var fromEmail = _configuration["Smtp:FromEmail"] ?? "onboarding@resend.dev";
-            var fromName = _configuration["Smtp:FromName"] ?? "Panificadora Sabor de Mel";
+            var host = Environment.GetEnvironmentVariable("SMTP_HOST") ?? _configuration["Smtp:Host"];
+            var portStr = Environment.GetEnvironmentVariable("SMTP_PORT") ?? _configuration["Smtp:Port"];
+            var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? _configuration["Smtp:Username"];
+            var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? _configuration["Smtp:Password"];
+            var apiKey = Environment.GetEnvironmentVariable("RESEND_API_KEY") ?? _configuration["Smtp:ApiKey"] ?? password;
+            var fromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL") ?? _configuration["Smtp:FromEmail"] ?? "onboarding@resend.dev";
+            var fromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME") ?? _configuration["Smtp:FromName"] ?? "Panificadora Sabor de Mel";
 
             // Se for chave da Resend API (começa com "re_")
             if (!string.IsNullOrWhiteSpace(apiKey) && apiKey.Trim().StartsWith("re_"))

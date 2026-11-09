@@ -36,11 +36,14 @@ export default function LoginPage() {
     try {
       const response = await api.post('/Usuarios/login', { email, senha });
       if (response.status === 200) {
-        const { id, nome, role, tipo } = response.data;
+        const { id, nome, role, tipo, token } = response.data;
         localStorage.setItem('usuario_id', id.toString());
         localStorage.setItem('usuario_nome', nome);
         localStorage.setItem('usuario_role', role);
         localStorage.setItem('usuario_tipo', tipo);
+        if (token) {
+          localStorage.setItem('usuario_token', token);
+        }
         
         setSuccess('Login realizado com sucesso! Redirecionando...');
         setTimeout(() => {
