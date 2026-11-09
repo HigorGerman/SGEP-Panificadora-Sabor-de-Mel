@@ -35,6 +35,7 @@ namespace BackEnd.Controllers
                     Nome = request.Nome,
                     PrecoUnitario = request.PrecoUnitario,
                     CategoriaId = request.CategoriaId,
+                    ImagemUrl = request.ImagemUrl,
                     Descricao = request.Descricao,
                     Receita = new Receita {
                         Ingredientes = request.Ingredientes,
@@ -137,6 +138,7 @@ namespace BackEnd.Controllers
                 Nome = request.Nome,
                 PrecoUnitario = request.PrecoUnitario,
                 CategoriaId = request.CategoriaId,
+                ImagemUrl = request.ImagemUrl,
                 Descricao = request.Descricao,
                 Receita = new Receita {
                     Ingredientes = request.Ingredientes,

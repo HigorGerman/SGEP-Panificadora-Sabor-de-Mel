@@ -219,6 +219,15 @@ export default function ProdutosPage() {
         ) : (
           filteredProdutos.map((p) => (
             <div key={p.id} className={styles.card}>
+              {p.imagemUrl && (
+                <div style={{ width: '100%', height: '160px', marginBottom: '12px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f7fafc' }}>
+                  <img
+                    src={p.imagemUrl}
+                    alt={p.nome}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+              )}
               <div className={styles.cardInfo}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                   <h3 style={{ margin: 0 }}>{p.nome}</h3>
@@ -307,6 +316,15 @@ export default function ProdutosPage() {
                   onChange={e => setNovoProduto({...novoProduto, imagemUrl: e.target.value})}
                   placeholder="https://link-da-imagem.com/foto.jpg"
                 />
+                {novoProduto.imagemUrl && novoProduto.imagemUrl.trim().length > 0 && (
+                  <div style={{ marginTop: '8px', width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', backgroundColor: '#f7fafc' }}>
+                    <img
+                      src={novoProduto.imagemUrl}
+                      alt="Pré-visualização"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '15px', marginTop: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>

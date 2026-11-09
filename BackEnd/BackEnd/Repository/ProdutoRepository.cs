@@ -93,10 +93,11 @@ namespace BackEnd.Repository
         {
             using var cmd = _context.GetConexao().CreateCommand();
             cmd.CommandText = @"UPDATE produto SET nome = @nome, preco_unitario = @preco, 
-                        categoria_id = @catId, descricao = @descricao, permite_customizacao = @permiteCustomizacao, template_customizacao = CAST(@templateCustomizacao AS jsonb), contem_gluten = @gluten, contem_lactose = @lactose, contem_acucar = @acucar WHERE id = @id";
+                        categoria_id = @catId, imagem_url = @img, descricao = @descricao, permite_customizacao = @permiteCustomizacao, template_customizacao = CAST(@templateCustomizacao AS jsonb), contem_gluten = @gluten, contem_lactose = @lactose, contem_acucar = @acucar WHERE id = @id";
             cmd.Parameters.AddWithValue("@nome", produto.Nome);
             cmd.Parameters.AddWithValue("@preco", produto.PrecoUnitario);
             cmd.Parameters.AddWithValue("@catId", produto.CategoriaId);
+            cmd.Parameters.AddWithValue("@img", (object?)produto.ImagemUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@descricao", (object?)produto.Descricao ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@permiteCustomizacao", produto.PermiteCustomizacao);
             cmd.Parameters.AddWithValue("@templateCustomizacao", string.IsNullOrEmpty(produto.TemplateCustomizacao) ? DBNull.Value : (object)produto.TemplateCustomizacao);
