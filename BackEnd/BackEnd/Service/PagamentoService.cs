@@ -37,11 +37,11 @@ namespace BackEnd.Services
             if (!string.IsNullOrWhiteSpace(envUrl))
                 return envUrl.TrimEnd('/');
 
-            if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Production", StringComparison.OrdinalIgnoreCase))
-                return "https://sgep-panificadora-sabor-de-mel.vercel.app";
+            var configUrl = _configuration["FrontendUrl"];
+            if (!string.IsNullOrWhiteSpace(configUrl))
+                return configUrl.TrimEnd('/');
 
-            var configUrl = _configuration["FrontendUrl"] ?? "http://localhost:3000";
-            return configUrl.TrimEnd('/');
+            return "https://sgep-panificadora-sabor-de-mel.vercel.app";
         }
 
         public async Task<GerarPreferenciaResponseDTO> GerarPreferenciaAsync(GerarPreferenciaRequestDTO request)
@@ -88,7 +88,7 @@ namespace BackEnd.Services
                     Failure = $"{ObterFrontendBaseUrl()}/minhas-encomendas?status=falha",
                     Pending = $"{ObterFrontendBaseUrl()}/minhas-encomendas?status=pendente"
                 },
-                AutoReturn = "approved"
+                AutoReturn = ObterFrontendBaseUrl().StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? "approved" : null
             };
 
             var originalCulture = CultureInfo.CurrentCulture;
