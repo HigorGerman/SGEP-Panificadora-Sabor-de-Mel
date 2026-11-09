@@ -111,6 +111,25 @@ namespace BackEnd.Repository
             return lista;
         }
 
+        public Usuario? ObterPorEmail(string email)
+        {
+            using var cmd = _context.GetConexao().CreateCommand();
+            cmd.CommandText = "SELECT * FROM usuario WHERE LOWER(email) = LOWER(@email) AND excluido = false LIMIT 1";
+            cmd.Parameters.AddWithValue("@email", email.Trim());
+            using var dr = cmd.ExecuteReader();
+            if (dr.Read()) return Map(dr);
+            return null;
+        }
+
+        public bool AtualizarSenha(int id, string novaSenhaHash)
+        {
+            using var cmd = _context.GetConexao().CreateCommand();
+            cmd.CommandText = "UPDATE usuario SET senha = @senha WHERE id = @id";
+            cmd.Parameters.AddWithValue("@senha", novaSenhaHash);
+            cmd.Parameters.AddWithValue("@id", id);
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
         public bool Alterar(Usuario usuario)
         {
             using var cmd = _context.GetConexao().CreateCommand();

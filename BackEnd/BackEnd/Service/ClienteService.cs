@@ -9,15 +9,18 @@ namespace BackEnd.Services
     public class ClienteServices
     {
         private readonly ClienteRepository _repository;
+        private readonly UsuarioRepository _usuarioRepository;
         private readonly TokenAutenticacaoRepository _tokenRepository;
         private readonly EmailService _emailService;
 
         public ClienteServices(
             ClienteRepository repository,
+            UsuarioRepository usuarioRepository,
             TokenAutenticacaoRepository tokenRepository,
             EmailService emailService)
         {
             _repository = repository;
+            _usuarioRepository = usuarioRepository;
             _tokenRepository = tokenRepository;
             _emailService = emailService;
         }
@@ -57,21 +60,27 @@ namespace BackEnd.Services
             if (string.IsNullOrWhiteSpace(email)) return false;
 
             var cliente = _repository.ObterPorEmail(email);
-            if (cliente == null)
+            var usuario = cliente == null ? _usuarioRepository.ObterPorEmail(email) : null;
+
+            if (cliente == null && usuario == null)
             {
                 // Retornamos true para prevenir enumeração de e-mails, por boas práticas de segurança
                 return true;
             }
 
+            int targetId = cliente != null ? cliente.Id : -usuario!.Id;
+            string targetEmail = cliente?.Email ?? usuario!.Email;
+            string targetNome = cliente?.Nome ?? usuario!.UsuarioNome;
+
             // Invalida tokens anteriores do mesmo tipo
-            _tokenRepository.InvalidarTokensAnteriores(cliente.Id, "RECUPERACAO_SENHA");
+            _tokenRepository.InvalidarTokensAnteriores(targetId, "RECUPERACAO_SENHA");
 
             // Gera código aleatório de 6 dígitos numéricos
             string codigoToken = Random.Shared.Next(100000, 999999).ToString();
 
             var token = new TokenAutenticacao
             {
-                ClienteId = cliente.Id,
+                ClienteId = targetId,
                 CodigoToken = codigoToken,
                 TipoToken = "RECUPERACAO_SENHA",
                 DataExpiracao = DateTime.UtcNow.AddMinutes(15),
@@ -81,7 +90,7 @@ namespace BackEnd.Services
             bool salvou = _tokenRepository.Criar(token);
             if (salvou)
             {
-                await _emailService.EnviarCodigoRecuperacaoSenhaAsync(cliente.Email ?? email, cliente.Nome, codigoToken);
+                await _emailService.EnviarCodigoRecuperacaoSenhaAsync(targetEmail, targetNome, codigoToken);
                 return true;
             }
 
@@ -101,12 +110,16 @@ namespace BackEnd.Services
             }
 
             var cliente = _repository.ObterPorEmail(email);
-            if (cliente == null)
+            var usuario = cliente == null ? _usuarioRepository.ObterPorEmail(email) : null;
+
+            if (cliente == null && usuario == null)
             {
-                throw new KeyNotFoundException("Cliente não encontrado com o e-mail informado.");
+                throw new KeyNotFoundException("Conta não encontrada com o e-mail informado.");
             }
 
-            var tokenValido = _tokenRepository.ObterTokenValido(cliente.Id, codigoToken, "RECUPERACAO_SENHA");
+            int targetId = cliente != null ? cliente.Id : -usuario!.Id;
+
+            var tokenValido = _tokenRepository.ObterTokenValido(targetId, codigoToken, "RECUPERACAO_SENHA");
             if (tokenValido == null)
             {
                 throw new InvalidOperationException("Código de verificação inválido ou expirado. Solicite um novo código.");
@@ -115,7 +128,10 @@ namespace BackEnd.Services
             // Criptografa a nova senha com BCrypt
             string novaSenhaHash = BCrypt.Net.BCrypt.HashPassword(novaSenha);
 
-            bool atualizou = _repository.AtualizarSenha(cliente.Id, novaSenhaHash);
+            bool atualizou = cliente != null
+                ? _repository.AtualizarSenha(cliente.Id, novaSenhaHash)
+                : _usuarioRepository.AtualizarSenha(usuario!.Id, novaSenhaHash);
+
             if (atualizou)
             {
                 _tokenRepository.MarcarComoUtilizado(tokenValido.Id);

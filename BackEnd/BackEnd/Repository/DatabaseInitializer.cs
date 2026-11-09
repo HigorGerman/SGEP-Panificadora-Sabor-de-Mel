@@ -76,13 +76,14 @@ namespace BackEnd.Repository
 
                     CREATE TABLE IF NOT EXISTS token_autenticacao (
                         id SERIAL PRIMARY KEY,
-                        cliente_id INTEGER NOT NULL REFERENCES cliente(id) ON DELETE CASCADE,
+                        cliente_id INTEGER NOT NULL,
                         codigo_token VARCHAR(6) NOT NULL,
                         tipo_token VARCHAR(50) NOT NULL,
                         data_expiracao TIMESTAMP NOT NULL,
                         utilizado BOOLEAN NOT NULL DEFAULT FALSE,
                         data_criacao TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
                     );
+                    ALTER TABLE token_autenticacao DROP CONSTRAINT IF EXISTS token_autenticacao_cliente_id_fkey;
 
                     CREATE TABLE IF NOT EXISTS categoria (
                         id SERIAL PRIMARY KEY,
