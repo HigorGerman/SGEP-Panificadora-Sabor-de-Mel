@@ -33,10 +33,15 @@ namespace BackEnd.Services
 
         private string ObterFrontendBaseUrl()
         {
-            var url = Environment.GetEnvironmentVariable("FRONTEND_URL")
-                      ?? _configuration["FrontendUrl"]
-                      ?? "http://localhost:3000";
-            return url.TrimEnd('/');
+            var envUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
+            if (!string.IsNullOrWhiteSpace(envUrl))
+                return envUrl.TrimEnd('/');
+
+            if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Production", StringComparison.OrdinalIgnoreCase))
+                return "https://sgep-panificadora-sabor-de-mel.vercel.app";
+
+            var configUrl = _configuration["FrontendUrl"] ?? "http://localhost:3000";
+            return configUrl.TrimEnd('/');
         }
 
         public async Task<GerarPreferenciaResponseDTO> GerarPreferenciaAsync(GerarPreferenciaRequestDTO request)
