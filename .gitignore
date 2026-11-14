@@ -14,12 +14,15 @@ desktop.ini
 # Dependências
 node_modules/
 frontend/node_modules/
+manual/node_modules/
 
-# Build do Next.js
+# Build do Next.js e Docusaurus
 .next/
 frontend/.next/
 out/
 frontend/out/
+manual/.docusaurus/
+manual/build/
 
 # Variáveis de Ambiente
 .env
