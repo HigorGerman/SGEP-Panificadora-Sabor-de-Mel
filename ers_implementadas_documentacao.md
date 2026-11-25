@@ -1,267 +1,188 @@
 # Documentação das Estórias de Usuário Implementadas (ERS)
-## Detalhamento Técnico do Backend e Interface Gráfica
+## Detalhamento Técnico do Backend, Banco de Dados e Interface Gráfica — SGEP
 
-Este documento reúne as especificações técnicas das estórias de usuário da ERS que já foram **implementadas** no sistema **SGEP**. Para cada item, é fornecido um espaço para anexação de print da tela e o mapeamento detalhado da arquitetura backend (tecnologias, métodos, tabelas e relacionamentos).
+**Versão de Entrega Final — Estágio Supervisionado FIPP/Unoeste (02/2026)**  
+**Aluno:** Higor Germano Cerqueira · **Orientadora:** Carolina Dias Chaves Corvetto  
+**Empresa:** Panificadora e Mercado Sabor de Mel (Santo Expedito - SP)
+
+Este documento reúne o detalhamento técnico das **20 Estórias de Usuário (F1 a F20)** da ERS, todas **100% concluídas e homologadas em produção** no sistema **SGEP**, vinculando cada requisito aos seus arquivos de código-fonte (Frontend Next.js e Backend C# .NET 10), tabelas PostgreSQL e capturas reais de tela disponíveis em [`manual/static/img/telas/`](file:///Users/germano/Documents/SGEP/manual/static/img/telas).
+
+---
+
+## Resumo Geral de Atendimento da ERS (20/20 Concluídas)
+
+| ID | Estória de Usuário | Classificação | Complexidade | Situação |
+| :-: | :--- | :-: | :-: | :-: |
+| **F1** | Gerenciar Usuários | Básica | MÉDIA | Concluída |
+| **F2** | Gerenciar Clientes (CRM) | Básica | BAIXA | Concluída |
+| **F3** | Gerenciar Categorias de Produtos | Básica | BAIXA | Concluída |
+| **F4** | Gerenciar Produtos | Básica | BAIXA | Concluída |
+| **F5** | Gerenciar Receitas (Módulo Privado) | Básica | MÉDIA | Concluída |
+| **F6** | Gerenciar Permissões de Receitas | Básica | BAIXA | Concluída |
+| **F7** | Efetuar Encomenda Personalizada | Fundamental | ALTA | Concluída |
+| **F8** | Vincular Especificações Técnicas ao Pedido | Fundamental | MÉDIA | Concluída |
+| **F9** | Validar Alertas de Segurança Alimentar | Fundamental | MÉDIA | Concluída |
+| **F10** | Registrar Recebimento de Sinal / Pagamento | Fundamental | MÉDIA | Concluída |
+| **F11** | Consultar Histórico de Inadimplência por CPF | Fundamental | MÉDIA | Concluída |
+| **F12** | Gerar Ordem de Produção Técnica | Fundamental | BAIXA | Concluída |
+| **F13** | Visualizar Cronograma de Produção | Fundamental | MÉDIA | Concluída |
+| **F14** | Atualizar Status da Produção | Fundamental | BAIXA | Concluída |
+| **F15** | Registrar Conclusão de Encomenda | Fundamental | BAIXA | Concluída |
+| **F16** | Registrar Entrega e Retirada de Pedido | Fundamental | BAIXA | Concluída |
+| **F17** | Liquidar Saldo Devedor na Entrega | Fundamental | MÉDIA | Concluída |
+| **F18** | Recuperar Senha e Validar Operações de Conta com Token por E-mail | Fundamental | MÉDIA | Concluída |
+| **F19** | Dashboard de Desempenho Diário | Saída | MÉDIA | Concluída |
+| **F20** | Emitir Relatório Estratégico Mensal | Saída | ALTA | Concluída |
 
 ---
 
 ## 1. Gerenciar Usuários (F1)
-* **Objetivo**: Cadastro, consulta, edição e exclusão de operadores (administradores e funcionários).
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [usuarios/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/usuarios/page.tsx)
-* **Descrição da UI**: Painel administrativo contendo tabela listando os usuários ativos, botões de ação para abrir o modal de cadastro/edição, formulário de preenchimento e confirmação de exclusão.
-
-> [!NOTE]
-> **[INSERIR PRINT DA INTERFACE DE GERENCIAMENTO DE USUÁRIOS AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql (driver do PostgreSQL), BCrypt.Net-Next (criptografia segura de senhas).
-* **Camadas e Métodos**:
-  * **Controlador**: `UsuariosController` ([UsuariosController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/UsuariosController.cs))
-    * `Criar(UsuarioCriarRequest request)`: Recebe a rota POST para inserção.
-    * `Listar()`: Recebe a rota GET para listar usuários ativos.
-    * `Alterar(int id, UsuarioCriarRequest request)`: Recebe a rota PUT para atualizar dados cadastrais.
-    * `Excluir(int id)`: Recebe a rota DELETE.
-    * `Login(LoginRequestDTO loginDto)`: Valida e-mail e senha.
-  * **Serviço**: `UsuarioServices` ([UsuarioServices.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/UsuarioServices.cs))
-  * **Repositório**: `UsuarioRepository` ([UsuarioRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/UsuarioRepository.cs))
-    * `Criar(Usuario usuario)`: Insere o registro criptografando a senha com `BCrypt.HashPassword`.
-    * `ObterPorEmailESenha(string email, string senha)`: Autentica o usuário e atualiza automaticamente senhas antigas legadas em texto puro para hash BCrypt.
-    * `Excluir(int id)`: Executa uma consulta preventiva. Se houver encomendas no nome do funcionário, executa um `UPDATE` definindo `excluido = true` (exclusão lógica). Se não houver vínculos, executa um `DELETE` físico.
-* **Banco de Dados**:
-  * **Tabela**: `usuario`
-  * **Colunas**: `id` (INT, SERIAL, PRIMARY KEY), `usuario_nome` (VARCHAR), `email` (VARCHAR, UNIQUE), `senha` (VARCHAR), `perfil_enum` (INT - 0 para Admin e 1 para Funcionário), `excluido` (BOOLEAN, DEFAULT false).
-* **Relacionamentos**:
-  * Associação de 1:N com `encomenda` (`encomenda.usuario_id` referenciando `usuario(id)`).
-  * Associação de 1:N com `encomenda` como entregador (`encomenda.usuario_entrega_id` referenciando `usuario(id)`).
+* **Objetivo**: Cadastro, listagem, busca, alteração e inativação lógica de operadores internos (Administradores e Funcionários).
+* **Frontend**: [`usuarios/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/usuarios/page.tsx) — Captura: [`18-usuarios.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/18-usuarios.png)
+* **Backend**: [`UsuariosController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/UsuariosController.cs) → [`UsuarioServices.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/UsuarioServices.cs) → [`UsuarioRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/UsuarioRepository.cs)
+  * Senhas criptografadas com `BCrypt.Net.BCrypt.HashPassword`.
+  * Exclusão lógica (`excluido = true`) caso existam encomendas vinculadas ao operador, preservando auditoria.
+* **Banco de Dados**: Tabela `usuario` (`id`, `usuario_nome`, `email`, `senha`, `perfil_enum`, `excluido`).
 
 ---
 
 ## 2. Gerenciar Clientes / CRM (F2)
-* **Objetivo**: Cadastro e manutenção cadastral de clientes da panificadora e definição de restrições alimentares.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivos**: [registro/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/registro/page.tsx) (Cadastro de conta) e [perfil/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/perfil/page.tsx) (Configuração de dados e intolerâncias).
-* **Descrição da UI**: Tela de registro público com formulário de dados e checkboxes para restrições a glúten/lactose/açúcar. Tela de perfil para edição das preferências de saúde alimentar do cliente.
-
-> [!NOTE]
-> **[INSERIR PRINT DAS INTERFACES DE REGISTRO E PERFIL DO CLIENTE AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql, BCrypt.Net-Next.
-* **Camadas e Métodos**:
-  * **Controlador**: `ClienteController` ([ClienteController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/ClienteController.cs))
-    * `Criar(ClienteCriarRequest request)`: Rota POST pública para autocadastro.
-    * `AlterarPerfil(ClienteCriarRequest request)`: Rota PUT para atualização própria de dados pelo cliente.
-    * `Excluir(int id)`: Rota DELETE.
-  * **Serviço**: `ClienteServices` ([ClienteService.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/ClienteService.cs))
-  * **Repositório**: `ClienteRepository` ([ClienteRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/ClienteRepository.cs))
-    * `Criar(Cliente cliente)`: Insere o registro de cliente com flags de segurança e senha hash.
-    * `Excluir(int id)`: Se o cliente possuir encomendas cadastradas, atualiza `ativo = false` (exclusão lógica), caso contrário realiza `DELETE` físico.
-* **Banco de Dados**:
-  * **Tabela**: `cliente`
-  * **Colunas**: `id` (PK, SERIAL), `nome` (VARCHAR), `cpf` (VARCHAR, NULLABLE), `email` (VARCHAR, NULLABLE), `senha` (VARCHAR, NULLABLE), `telefone` (VARCHAR, NULLABLE), `restricao_gluten` (BOOLEAN), `restricao_lactose` (BOOLEAN), `restricao_acucar` (BOOLEAN), `ativo` (BOOLEAN, DEFAULT true).
-* **Relacionamentos**:
-  * Associação de 1:N com `encomenda` (`encomenda.cliente_id` referenciando `cliente(id)`).
+* **Objetivo**: Cadastro e manutenção de clientes com CPF único, telefone, e-mail e preferências de restrições alimentares (Glúten, Lactose e Açúcar).
+* **Frontend**: [`registro/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/registro/page.tsx) e [`perfil/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/perfil/page.tsx) — Capturas: [`03-registro.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/03-registro.png) e [`08-perfil.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/08-perfil.png)
+* **Backend**: [`ClienteController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/ClienteController.cs) → [`ClienteService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/ClienteService.cs) → [`ClienteRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/ClienteRepository.cs)
+* **Banco de Dados**: Tabela `cliente` (`id`, `nome`, `cpf`, `email`, `senha`, `telefone`, `restricao_gluten`, `restricao_lactose`, `restricao_acucar`, `ativo`, `bloqueado_encomendas`, `motivo_bloqueio`).
 
 ---
 
 ## 3. Gerenciar Categorias de Produtos (F3)
-* **Objetivo**: Cadastrar grupos lógicos de classificação dos itens de panificação.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [categorias/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/categorias/page.tsx)
-* **Descrição da UI**: Tela administrativa simples contendo listagem de categorias cadastradas, botão de criação e exclusão, além de indicação de inatividade.
-
-> [!NOTE]
-> **[INSERIR PRINT DA INTERFACE DE CATEGORIAS AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql.
-* **Camadas e Métodos**:
-  * **Controlador**: `CategoriasController` ([CategoriasController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/CategoriasController.cs))
-  * **Serviço**: `CategoriaService` ([CategoriaService.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/CategoriaService.cs))
-  * **Repositório**: `CategoriaRepository` ([CategoriaRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/CategoriaRepository.cs))
-    * `Criar(Categoria categoria)`: Comando SQL `INSERT INTO categoria`.
-    * `Excluir(int id)`: Executa query preventiva. Se a categoria possuir produtos vinculados, faz `UPDATE categoria SET inativo = true` para manter a integridade referencial. Se estiver vazia, faz o `DELETE` físico.
-* **Banco de Dados**:
-  * **Tabela**: `categoria`
-  * **Colunas**: `id` (PK SERIAL), `descricao` (VARCHAR), `inativo` (BOOLEAN, DEFAULT false).
-* **Relacionamentos**:
-  * Associação de 1:N com a tabela `produto` (`produto.categoria_id` referenciando `categoria(id)`).
+* **Objetivo**: Classificar o catálogo em grupos lógicos de produtos, aplicando inativação lógica quando já houver itens associados.
+* **Frontend**: [`categorias/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/categorias/page.tsx) — Captura: [`16-categorias.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/16-categorias.png)
+* **Backend**: [`CategoriasController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/CategoriasController.cs) → [`CategoriaService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/CategoriaService.cs) → [`CategoriaRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/CategoriaRepository.cs)
+* **Banco de Dados**: Tabela `categoria` (`id`, `descricao`, `inativo`).
 
 ---
 
 ## 4. Gerenciar Produtos (F4)
-* **Objetivo**: Cadastro detalhado do cardápio comercial da padaria, informando preço base, permissão de customização e composição de alergênicos.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [produtos/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/produtos/page.tsx)
-* **Descrição da UI**: Grid/lista de produtos cadastrados com foto, preço, descrição e flags de ingredientes. Modais de inclusão/edição integrando checkboxes de customização e campos de saúde.
-
-> [!NOTE]
-> **[INSERIR PRINT DA INTERFACE DE PRODUTOS AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql.
-* **Camadas e Métodos**:
-  * **Controlador**: `ProdutosController` ([ProdutosController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/ProdutoController.cs))
-  * **Serviço**: `ProdutoServices` ([ProdutoService.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/ProdutoService.cs))
-  * **Repositório**: `ProdutoRepository` ([ProdutoRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/ProdutoRepository.cs))
-    * `Criar(Produto produto)`: SQL `INSERT` que faz cast explícito do template de customização enviado (`CAST(@templateCustomizacao AS jsonb)`).
-    * `Excluir(int id)`: Remove preventivamente a receita do produto e deleta o item. Bloqueia a exclusão disparando exceção amigável se o produto estiver atrelado a itens de encomendas existentes no banco (erro Postgres code `23503`).
-* **Banco de Dados**:
-  * **Tabela**: `produto`
-  * **Colunas**: `id` (PK SERIAL), `nome` (VARCHAR), `preco_unitario` (NUMERIC), `categoria_id` (FK `categoria`), `imagem_url` (VARCHAR), `descricao` (TEXT), `permite_customizacao` (BOOLEAN), `template_customizacao` (JSONB, NULLABLE), `contem_gluten` (BOOLEAN), `contem_lactose` (BOOLEAN), `contem_acucar` (BOOLEAN).
-* **Relacionamentos**:
-  * Muitos para Um (N:1) com `categoria` (`categoria_id` FK).
-  * Um para Um (1:1) com `receita`.
-  * Um para Muitos (1:N) com `item_encomenda`.
+* **Objetivo**: Cadastrar produtos do cardápio com foto (`ImagemUrl`), preço unitário, categoria, flags de alérgenos e template `JSONB` de campos de personalização.
+* **Frontend**: [`produtos/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/produtos/page.tsx) e [`catalogo/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/catalogo/page.tsx) — Capturas: [`17-produtos.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/17-produtos.png) e [`05-catalogo.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/05-catalogo.png)
+* **Backend**: [`ProdutoController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/ProdutoController.cs) → [`ProdutoService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/ProdutoService.cs) → [`ProdutoRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/ProdutoRepository.cs)
+* **Banco de Dados**: Tabela `produto` (`id`, `nome`, `preco_unitario`, `categoria_id`, `imagem_url`, `descricao`, `permite_customizacao`, `template_customizacao`, `contem_gluten`, `contem_lactose`, `contem_acucar`).
 
 ---
 
-## 5. Gerenciar Receitas - Módulo Privado (F5)
-* **Objetivo**: Cadastro de fórmulas confidenciais de confecção de produtos, com uso restrito à cozinha.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [receitas/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/receitas/page.tsx)
-* **Descrição da UI**: Tela gerencial voltada a padeiros/confeiteiros exibindo a lista de produtos e uma gaveta colapsável (drawer) ou modal para inserção da lista de ingredientes, rendimento e modo de preparo passo a passo.
-
-> [!NOTE]
-> **[INSERIR PRINT DA INTERFACE DE RECEITAS AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql.
-* **Camadas e Métodos**:
-  * **Controlador**: `ProdutosController` ([ProdutosController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/ProdutoController.cs#L161-L171) - rota `PUT {id}/receita`)
-  * **Serviço**: `ProdutoServices` ([ProdutoService.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/ProdutoService.cs#L49-L52))
-  * **Repositório**: `ReceitaRepository` ([ReceitaRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/ReceitaRepository.cs))
-    * `Salvar(Receita receita)`: Lógica híbrida ("upsert"). Primeiro verifica se já existe receita no ID do produto com `ObterPorProduto`. Se nulo, executa `INSERT INTO receita`. Caso contrário, executa `UPDATE receita`.
-* **Banco de Dados**:
-  * **Tabela**: `receita`
-  * **Colunas**: `id` (PK SERIAL), `produto_id` (FK `produto` UNIQUE), `ingredientes` (TEXT), `modo_preparo` (TEXT), `rendimento` (VARCHAR).
-* **Relacionamentos**:
-  * Relação 1:1 com `produto`. A unicidade é forçada pela chave estrangeira `produto_id` marcada como `UNIQUE`. Possui deleção em cascata (`ON DELETE CASCADE`) atrelada ao produto pai.
+## 5. Gerenciar Receitas — Módulo Privado (F5)
+* **Objetivo**: Cadastrar e consultar fichas técnicas confidenciais (ingredientes, modo de preparo e rendimento) vinculadas aos produtos da panificadora.
+* **Frontend**: [`receitas/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/receitas/page.tsx) — Captura: [`12-receitas.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/12-receitas.png)
+* **Backend**: `ProdutosController` (`GET /Produtos/com-receitas` e `PUT /Produtos/{id}/receita`) → [`ReceitaRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/ReceitaRepository.cs) (*upsert* automático por `produto_id`).
+* **Banco de Dados**: Tabela `receita` (`id`, `produto_id` UNIQUE FK, `ingredientes`, `modo_preparo`, `rendimento`).
 
 ---
 
-## 6. Efetuar Encomenda Personalizada (F7)
-* **Objetivo**: Possibilitar a clientes e atendentes criar pedidos de encomendas de produtos da panificadora.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [nova-encomenda/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx)
-* **Descrição da UI**: Vitrine de produtos pesquisável com contador de quantidade e botão de adição ao carrinho. Carrinho lateral exibindo resumo do pedido, campo de data de retirada obrigatória com trava mínima de 24 horas de antecedência, e fechamento.
-
-> [!NOTE]
-> **[INSERIR PRINT DA VITRINE DE ENCOMENDAS E CARRINHO AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql com transações explícitas no repositório.
-* **Camadas e Métodos**:
-  * **Controlador**: `EncomendaController` ([EncomendaController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/EncomendaController.cs))
-    * `Criar(EncomendaCreateDto dto)`: Recebe o payload do pedido e aciona o serviço.
-    * `ListarComDetalhes()`: Retorna as encomendas ativas com join de clientes.
-  * **Serviço**: `EncomendaServices` ([EncomendaService.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/EncomendaService.cs))
-    * `Criar(Encomenda encomenda)`: Lógica de segurança de precificação. Itera sobre cada item enviado, obtém o preço unitário atualizado diretamente da tabela `produto` no banco, calcula a multiplicação pela quantidade, soma o `ValorTotal` final e envia para inserção.
-  * **Repositório**: `EncomendaRepository` ([EncomendaRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/EncomendaRepository.cs))
-    * `Criar(Encomenda encomenda)`: Abre uma conexão e inicia uma transação explícita (`conexao.BeginTransaction()`). Insere a linha de cabeçalho na tabela `encomenda` retornando o ID gerado. Em seguida, roda uma iteração inserindo as linhas de itens na tabela `item_encomenda` vinculados a este ID. Caso ocorra qualquer erro, executa `transacao.Rollback()`. Se tudo der certo, executa `transacao.Commit()`.
-* **Banco de Dados**:
-  * **Tabela**: `encomenda`
-  * **Colunas**: `id` (PK SERIAL), `cliente_id` (FK `cliente` NULLABLE), `usuario_id` (FK `usuario` NULLABLE), `data_retirada` (TIMESTAMP), `valor_total` (NUMERIC), `status_enum` (INT - 0: Pendente, 1: Em Andamento, 2: Concluída, 3: Cancelada, 4: Entregue), `observacao` (TEXT).
-* **Relacionamentos**:
-  * Muitos para Um (N:1) com `cliente` (`cliente_id` FK).
-  * Muitos para Um (N:1) com `usuario` criador (`usuario_id` FK).
-  * Um para Muitos (1:N) com `item_encomenda` (relação de composição forte).
+## 6. Gerenciar Permissões de Receitas (F6)
+* **Objetivo**: Proteger o segredo industrial garantindo que apenas operadores internos autenticados acessem o módulo de receitas, restringindo edições cadastrais ao perfil Administrador (`0`).
+* **Frontend**: Controle de visibilidade e permissão em [`sidebar.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/components/sidebar.tsx), [`receitas/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/receitas/page.tsx) e [`produtos/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/produtos/page.tsx).
+* **Backend**: Emissão de `ClaimTypes.Role` em [`TokenService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/TokenService.cs) e validação JWT em [`Program.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Program.cs) com base em `usuario.perfil_enum`.
 
 ---
 
-## 7. Vincular Especificações Técnicas ao Pedido (F8)
-* **Objetivo**: Adicionar customizações detalhadas nos itens do pedido com base nas regras do produto.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [nova-encomenda/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx#L491-L528) (Função `proceedToAdd` e modal `customModalOpen`)
-* **Descrição da UI**: Modal dinâmico aberto automaticamente ao selecionar um produto que permite personalização. O formulário gera campos de texto baseados na configuração técnica do produto.
-
-> [!NOTE]
-> **[INSERIR PRINT DO MODAL DE PERSONALIZAÇÃO DE PRODUTO AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql, coluna nativa do PostgreSQL do tipo JSONB.
-* **Camadas e Métodos**:
-  * **Controlador/Repositório**: Integrado ao fluxo de criação de encomenda (`EncomendaRepository.Criar`).
-  * No momento de persistir o item da compra na tabela `item_encomenda`, o parâmetro correspondente é inserido utilizando cast direto no SQL: `INSERT INTO item_encomenda (... especificacoes_tecnicas) VALUES (... @specs::jsonb)`.
-* **Banco de Dados**:
-  * **Tabela**: `item_encomenda`
-  * **Coluna**: `especificacoes_tecnicas` (tipo `JSONB`, NULLABLE).
-* **Relacionamentos**:
-  * Vinculado ao registro correspondente do item do pedido.
+## 7. Efetuar Encomenda Personalizada (F7)
+* **Objetivo**: Registrar encomendas vinculadas ao cliente, validando antecedência mínima de 24h, janela comercial (Seg–Sáb, 08h–18h) e cálculo seguro do total no backend com transação SQL explícita.
+* **Frontend**: [`nova-encomenda/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx) e acompanhamento em [`minhas-encomendas/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/minhas-encomendas/page.tsx) — Capturas: [`06-nova-encomenda.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/06-nova-encomenda.png) e [`07-minhas-encomendas.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/07-minhas-encomendas.png)
+* **Backend**: [`EncomendaController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/EncomendaController.cs) → [`EncomendaService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/EncomendaService.cs) → [`EncomendaRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/EncomendaRepository.cs) (`BeginTransaction` / `Commit` / `Rollback`).
+* **Banco de Dados**: Tabelas `encomenda` e `item_encomenda`.
 
 ---
 
-## 8. Validar Alertas de Segurança Alimentar (F9)
-* **Objetivo**: Evitar erros operacionais alertando no carrinho caso o cliente adicione produtos com componentes que constam em suas restrições de alergia.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [nova-encomenda/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx#L158-L175) (Função `handleAddClick` e modal `healthAlertModalOpen`)
-* **Descrição da UI**: Modal vermelho de Alerta de Saúde bloqueando a inserção imediata no carrinho caso detectada incompatibilidade. Exibe mensagem de risco detalhada e botões para cancelar ou aceitar ciente dos riscos.
-
-> [!NOTE]
-> **[INSERIR PRINT DO MODAL DE ALERTA DE SAÚDE ALIMENTAR AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET. A validação das chaves ocorre em tela no React, cruzando os atributos de intolerância salvos no cadastro do cliente com a composição cadastrada no produto.
-* **Banco de Dados (Tabelas de Apoio)**:
-  * Cruzamento em tempo de execução dos campos booleanos:
-    * `cliente.restricao_gluten` (CRM) ↔ `produto.contem_gluten` (Catálogo)
-    * `cliente.restricao_lactose` (CRM) ↔ `produto.contem_lactose` (Catálogo)
-    * `cliente.restricao_acucar` (CRM) ↔ `produto.contem_acucar` (Catálogo)
+## 8. Vincular Especificações Técnicas ao Pedido (F8)
+* **Objetivo**: Capturar e gravar as personalizações individuais de cada item da encomenda (ex.: massa, recheio, tema, frase de topo e observação do item).
+* **Frontend**: Modal dinâmico `customModalOpen` em [`nova-encomenda/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx) renderizado a partir de `produto.templateCustomizacao`.
+* **Backend / Banco de Dados**: Persistido em formato estruturado `JSONB` na coluna `item_encomenda.especificacoes_tecnicas`.
 
 ---
 
-## 9. Atualizar Status da Produção (F14)
-* **Objetivo**: Acompanhar e atualizar o progresso produtivo da encomenda na fábrica/cozinha.
-
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [producao/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx)
-* **Descrição da UI**: Painel Kanban ou em colunas dinâmicas separando as encomendas por status ("Pendente", "Em Produção", "Concluído"). Possui botões rápidos para avançar o status dos cartões de pedidos.
-
-> [!NOTE]
-> **[INSERIR PRINT DO PAINEL DO CRONOGRAMA DE PRODUÇÃO / KANBAN AQUI]**
-
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql.
-* **Camadas e Métodos**:
-  * **Controlador**: `EncomendaController` ([EncomendaController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/EncomendaController.cs#L158-L172) - rota PATCH `api/encomenda/{id}/status`)
-  * **Serviço**: `EncomendaServices` ([EncomendaService.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/EncomendaService.cs#L77-L80))
-  * **Repositório**: `EncomendaRepository` ([EncomendaRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/EncomendaRepository.cs#L319-L327))
-    * `AtualizarStatus(int id, StatusEnum novoStatus)`: Executa query otimizada `UPDATE encomenda SET status_enum = @status WHERE id = @id`.
-* **Banco de Dados**:
-  * **Tabela**: `encomenda`
-  * **Coluna**: `status_enum` (INT).
+## 9. Validar Alertas de Segurança Alimentar (F9)
+* **Objetivo**: Emitir aviso crítico automático ao adicionar um produto que contenha Glúten, Lactose ou Açúcar incompatível com as restrições ativas no perfil do cliente.
+* **Frontend**: Banner preventivo de saúde + modal de confirmação `healthAlertModalOpen` em [`nova-encomenda/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx).
+* **Banco de Dados**: Cruzamento das flags booleanas `cliente.restricao_*` com `produto.contem_*`.
 
 ---
 
-## 10. Registrar Entrega e Retirada de Pedido (F16)
-* **Objetivo**: Confirmar a saída da encomenda física ao cliente, auditando a data de recebimento real e o funcionário entregador.
+## 10. Registrar Recebimento de Sinal / Pagamento (F10)
+* **Objetivo**: Integrar o pagamento online das encomendas via **Mercado Pago Checkout Pro** (Pix, Cartão de Crédito/Débito, integral ou sinal) ou registrar compromisso de pagamento presencial no balcão.
+* **Frontend**: Seletor de pagamento e redirecionamento Checkout Pro em [`nova-encomenda/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx) e confirmação automática de retorno em [`minhas-encomendas/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/minhas-encomendas/page.tsx).
+* **Backend**: [`PagamentosController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/PagamentosController.cs) (`gerar-preferencia`, `webhook`, `confirmar-retorno`, `registrar-presencial`) → [`PagamentoService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/PagamentoService.cs) → [`PagamentoRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/PagamentoRepository.cs).
+* **Banco de Dados**: Tabela `pagamento` (`valor_total`, `valor_sinal`, `saldo_devedor`, `status`, `forma_pagamento`, `preference_id`, `mp_payment_id`).
 
-### 🖥️ Interface Gráfica (Frontend)
-* **Arquivo**: [retirada/page.tsx](file:///Users/germano/Documents/SGEP/frontend/src/app/retirada/page.tsx)
-* **Descrição da UI**: Tela gerencial com busca por código de encomenda ou dados do cliente, botão de "Registrar Retirada" com confirmação do nome e telefone do cliente e identificação do entregador da loja.
+---
 
-> [!NOTE]
-> **[INSERIR PRINT DA INTERFACE DE RETIRADA E ENTREGA DE PEDIDOS AQUI]**
+## 11. Consultar Histórico de Inadimplência por CPF (F11)
+* **Objetivo**: Consultar pendências financeiras anteriores por CPF/ID antes de aprovar novos pedidos (alertando com 1 pendência e bloqueando a partir de 2 pendências ou bloqueio manual) e oferecer painel administrativo com disparo de aviso de cobrança por e-mail.
+* **Frontend**: [`admin/inadimplencia/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/inadimplencia/page.tsx) e validação em `/nova-encomenda` — Captura: [`15-inadimplencia.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/15-inadimplencia.png)
+* **Backend**: [`AdminInadimplenciaController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/AdminInadimplenciaController.cs) → `ClienteServices` → `ClienteRepository.ObterSituacaoFinanceiraCliente` / `ListarInadimplentes` + [`EmailService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/EmailService.cs).
 
-### ⚙️ Detalhamento do Backend
-* **Tecnologias**: C# .NET 10.0, ADO.NET com Npgsql.
-* **Camadas e Métodos**:
-  * **Controlador**: `EncomendaController` ([EncomendaController.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/EncomendaController.cs#L176-L190) - rota POST `api/encomenda/{id}/entrega`)
-  * **Serviço**: `EncomendaServices` ([EncomendaService.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/EncomendaService.cs#L82-L85))
-  * **Repositório**: `EncomendaRepository` ([EncomendaRepository.cs](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/EncomendaRepository.cs#L329-L380))
-    * `RegistrarEntrega(int id, int? usuarioEntregaId)`: Executa uma checagem prévia na tabela `pagamento` para validar a quitação do pedido (`SELECT status FROM pagamento WHERE encomenda_id = @id`). Se o status não constar como `'pago'` ou `'concluido'`, rejeita a transação lançando exceção protetiva. Se quitado, atualiza as colunas de finalização da tabela `encomenda`.
-* **Banco de Dados**:
-  * **Tabela**: `encomenda`
-  * **Colunas Atualizadas**: `status_enum = 4` (Entregue), `data_entrega_real` (TIMESTAMP atualizada no fuso de Brasília), `usuario_entrega_id` (FK `usuario`).
-* **Relacionamentos**:
-  * Muitos para Um (N:1) com a tabela `usuario` (`usuario_entrega_id` FK).
-  * Um para Um (1:1 na prática de validação) com a tabela `pagamento` (`encomenda_id` FK).
+---
+
+## 12. Gerar Ordem de Produção Técnica (F12)
+* **Objetivo**: Exibir e imprimir os detalhes técnicos completos da encomenda para a cozinha (cliente, horário de retirada, itens, quantidades e especificações técnicas personalizadas em destaque).
+* **Frontend**: Cards detalhados e visualização técnica em [`producao/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx) — Captura: [`09-producao.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/09-producao.png)
+* **Backend**: `EncomendaController.ListarComDetalhes` (`GET /api/Encomenda/detalhes`) consolidando `encomenda`, `cliente`, `item_encomenda` e `produto`.
+
+---
+
+## 13. Visualizar Cronograma de Produção (F13)
+* **Objetivo**: Organizar cronologicamente todas as encomendas por horário de retirada e fase operacional para priorização da fabricação sem atrasos.
+* **Frontend**: [`producao/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx) e [`historico/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/historico/page.tsx) — Capturas: [`09-producao.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/09-producao.png) e [`13-historico.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/13-historico.png)
+* **Backend**: Ordenação `ORDER BY e.data_retirada ASC` em [`EncomendaRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/EncomendaRepository.cs).
+
+---
+
+## 14. Atualizar Status da Produção (F14)
+* **Objetivo**: Avançar a fase produtiva da encomenda na cozinha (*Pendente* → *Em Produção*), dando visibilidade em tempo real à equipe e ao cliente.
+* **Frontend**: [`producao/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx)
+* **Backend**: `PATCH /api/Encomenda/{id}/status` em [`EncomendaController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/EncomendaController.cs).
+
+---
+
+## 15. Registrar Conclusão de Encomenda (F15)
+* **Objetivo**: Finalizar a etapa de fabricação marcando o pedido como *Concluído / Pronto para Retirada* (`status_enum = 2`), liberando-o automaticamente para conferência e entrega no balcão.
+* **Frontend**: Botão de conclusão em [`producao/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx) e listagem imediata em [`retirada/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/retirada/page.tsx).
+* **Backend**: `EncomendaRepository.AtualizarStatus(id, Encomenda.StatusEnum.Concluida)`.
+
+---
+
+## 16. Registrar Entrega e Retirada de Pedido (F16)
+* **Objetivo**: Confirmar a entrega física da encomenda ao cliente no balcão, exigindo pagamento quitado e auditando data/hora real e funcionário responsável.
+* **Frontend**: [`retirada/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/retirada/page.tsx) — Captura: [`10-retirada.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/10-retirada.png)
+* **Backend**: `POST /api/Encomenda/{id}/entrega` → `EncomendaRepository.RegistrarEntrega` (atualiza `status_enum = 4`, `data_entrega_real` e `usuario_entrega_id`).
+
+---
+
+## 17. Liquidar Saldo Devedor na Entrega (F17)
+* **Objetivo**: Receber e liquidar no caixa do balcão as encomendas agendadas para pagamento presencial ou com saldo devedor aberto, registrando a forma de pagamento efetiva (*Dinheiro*, *Pix*, *Cartão*).
+* **Frontend**: [`admin/cobranca/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/cobranca/page.tsx) — Captura: [`11-cobranca.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/11-cobranca.png)
+* **Backend**: `GET /api/pagamentos/pendentes` e `POST /api/pagamentos/liquidar` em [`PagamentosController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/PagamentosController.cs) → `PagamentoRepository.LiquidarSaldo`.
+
+---
+
+## 18. Recuperar Senha e Validar Operações de Conta com Token por E-mail (F18)
+* **Objetivo**: Validar operações críticas de conta mediante código numérico aleatório de 6 dígitos enviado por e-mail (validade de 15 minutos e invalidação automática de tokens anteriores) para:
+  1. **Recuperação de Senha** na tela de login (`/login`) para Clientes e Administradores/Funcionários.
+  2. **Alteração de Dados de Perfil e Troca de Senha** na tela `/perfil`.
+  3. **Exclusão Lógica de Conta (LGPD / Soft Delete)** na Zona de Perigo de `/perfil`.
+* **Frontend**: Modais de token em [`login/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/login/page.tsx) e [`perfil/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/perfil/page.tsx) — Capturas: [`04-recuperar-senha.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/04-recuperar-senha.png) e [`08-perfil.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/08-perfil.png)
+* **Backend**: [`ClienteController.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/ClienteController.cs) → [`ClienteService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/ClienteService.cs) → [`TokenAutenticacaoRepository.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/TokenAutenticacaoRepository.cs) + [`EmailService.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Service/EmailService.cs) (API HTTPS Resend / SMTP MailKit).
+* **Banco de Dados**: Tabela `token_autenticacao` (`id`, `cliente_id`, `codigo_token`, `tipo_token`, `data_expiracao`, `utilizado`, `data_criacao`).
+
+---
+
+## 19. Dashboard de Desempenho Diário (F19)
+* **Objetivo**: Exibir visão gerencial instantânea com os KPIs financeiros e operacionais do dia (Faturamento Confirmado, Saldo Pendente a Receber, Total de Encomendas e Ticket Médio).
+* **Frontend**: [`admin/dashboard/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/dashboard/page.tsx) — Captura: [`14-dashboard.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/14-dashboard.png)
+* **Backend**: `GET /api/pagamentos/dashboard` → [`DashboardResponseDTO.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Controllers/DTOS/DashboardResponseDTO.cs) → `PagamentoRepository.ObterDadosDashboard`.
+
+---
+
+## 20. Emitir Relatório Estratégico Mensal (F20)
+* **Objetivo**: Consolidar estatísticas gerenciais por período selecionável (início e fim / fechamento mensal), incluindo ranking de produtos mais vendidos, faturamento detalhado por meio de pagamento (*Mercado Pago*, *Pix*, *Cartão*, *Dinheiro*), gráfico de evolução diária e suporte a exportação/impressão.
+* **Frontend**: Filtros de período, gráficos analíticos e tabela de ranking em [`admin/dashboard/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/dashboard/page.tsx) — Captura: [`14-dashboard.png`](file:///Users/germano/Documents/SGEP/manual/static/img/telas/14-dashboard.png)
+* **Backend**: Queries agregadas em `PagamentoRepository.ObterDadosDashboard(DateTime? dataInicio, DateTime? dataFim)` retornando `ProdutosMaisVendidos`, `PagamentosPorForma` e `EvolucaoFaturamento`.

@@ -1,268 +1,223 @@
-# Especificação de Modelagem e Arquitetura para as 20 Funções da ERS
-## Guia de Apoio para Diagrama de Classes e Diagrama Entidade-Relacionamento (ER)
+# Especificação de Modelagem e Arquitetura das 20 Funções da ERS
+## Guia Consolidado de Classes, Serviços, Endpoints e Banco de Dados — SGEP
 
-Este documento foi elaborado para orientar a construção do **Diagrama de Classes de Contexto** e do **Diagrama Entidade-Relacionamento (ER)** do **SGEP (Panificadora Sabor de Mel)**. Para cada uma das 20 funções da ERS, são descritos os fluxos, classes de negócio, atributos impactados, relacionamentos e dicas específicas de modelagem.
+**Versão de Entrega Final — Estágio Supervisionado FIPP/Unoeste (02/2026)**  
+**Aluno:** Higor Germano Cerqueira · **Orientadora:** Carolina Dias Chaves Corvetto  
+**Empresa:** Panificadora e Mercado Sabor de Mel (Santo Expedito - SP)
 
----
-
-## 1. Mapeamento de Entidades e Tabelas Core
-Para contextualizar, estas são as entidades básicas presentes no sistema:
-1. **`Usuario`** (Tabela `usuario`): Gerencia operadores do sistema (Admin e Funcionários).
-2. **`Cliente`** (Tabela `cliente`): Clientes atendidos pela panificadora (com preferências alimentares).
-3. **`Categoria`** (Tabela `categoria`): Grupos de produtos (ex: Bolos, Pães).
-4. **`Produto`** (Tabela `produto`): Catálogo de produtos da panificadora.
-5. **`Receita`** (Tabela `receita`): Instruções secretas de produção de um produto.
-6. **`Encomenda`** (Tabela `encomenda`): Cabeçalho do pedido do cliente.
-7. **`ItemEncomenda`** (Tabela `item_encomenda`): Itens de produtos vinculados a um pedido.
-8. **`Pagamento`** (Tabela `pagamento`): Controle financeiro, sinal e saldo devedor de uma encomenda.
-9. **`Caixa`** (Tabela `caixa`): Turno financeiro de vendas diárias.
+Este documento consolida a modelagem arquitetural completa das **20 Estórias de Usuário (Funções F1 a F20)** especificadas na ERS e integralmente implementadas no **SGEP (Sistema de Gestão de Encomendas e Fluxo de Produção)**, servindo de referência direta para o **Diagrama de Classes** e o **Diagrama Entidade-Relacionamento (DER)**.
 
 ---
 
-## 2. Detalhamento das 20 Funções
+## 1. Mapeamento Geral de Entidades e Tabelas Core
+
+1. **`Usuario`** (`usuario`): Administradores (`0`) e Funcionários (`1`) da panificadora.
+2. **`Cliente`** (`cliente`): Cadastro CRM com CPF, contato, restrições alimentares (Glúten, Lactose, Açúcar) e controle de bloqueio por inadimplência.
+3. **`TokenAutenticacao`** (`token_autenticacao`): Tokens numéricos de 6 dígitos com expiração de 15 minutos para recuperação de senha, alteração de perfil e exclusão de conta por e-mail.
+4. **`Categoria`** (`categoria`): Agrupamento lógico do catálogo de produtos.
+5. **`Produto`** (`produto`): Itens comercializados com foto, preço, flags de alérgenos e template `JSONB` de customização.
+6. **`Receita`** (`receita`): Ficha técnica confidencial de fabricação própria (`1:1` com `Produto`).
+7. **`Encomenda`** (`encomenda`): Cabeçalho do pedido agendado, status produtivo e auditoria de retirada.
+8. **`ItemEncomenda`** (`item_encomenda`): Itens do pedido com `preco_no_ato` e `especificacoes_tecnicas` (`JSONB`).
+9. **`Pagamento`** (`pagamento`): Gestão financeira integrada ao **Mercado Pago Checkout Pro** e à cobrança presencial no **Balcão** (com tabela auxiliar `caixa` para FK opcional).
+
+---
+
+## 2. Detalhamento Arquitetural das 20 Funções (100% Concluídas)
 
 ### Função 1: Gerenciar Usuários
-* **Objetivo**: Cadastro, consulta, alteração e exclusão lógica de administradores e funcionários.
-* **Diagrama de Classes**:
-  * **Classe**: `Usuario`
-  * **Atributos**: `Id: int`, `UsuarioNome: string`, `Email: string`, `Senha: string`, `Perfil: PerfilEnum` (Admin=0, Funcionario=1), `Excluido: bool`.
-  * **Métodos (Service/Repository)**: `Criar(Usuario)`, `Listar()`, `Alterar(Usuario)`, `Excluir(id)`.
-* **Diagrama ER (Banco de Dados)**:
-  * **Tabela**: `usuario`
-  * **Colunas**: `id` (PK SERIAL), `usuario_nome` (VARCHAR), `email` (VARCHAR, UNIQUE), `senha` (VARCHAR), `perfil_enum` (INT), `excluido` (BOOLEAN).
-* **Diretiva de Modelagem**: Associação direta de `Usuario` (1) para `Encomenda` (N) como registrador ou entregador da encomenda. A exclusão é lógica (`excluido = true`) para manter o histórico de auditoria física.
+* **Classificação / Complexidade / Situação**: Básica · MÉDIA · **Concluída**
+* **Objetivo**: Cadastrar, listar, buscar, editar e inativar administradores e funcionários internos, protegendo senhas com hash `BCrypt` e preservando histórico de auditoria.
+* **Arquitetura e Classes**:
+  * **Entidade**: `Usuario` (`Id`, `UsuarioNome`, `Email`, `Senha`, `Perfil: PerfilEnum`, `Excluido`).
+  * **Backend**: `UsuariosController` → `UsuarioServices` → `UsuarioRepository` (`Criar`, `Listar`, `Alterar`, `Excluir`, `ObterPorEmailESenha`, `ObterPorEmail`, `AtualizarSenha`).
+  * **Frontend**: `/usuarios` ([`usuarios/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/usuarios/page.tsx)).
+* **Banco de Dados (`usuario`)**: Exclusão lógica (`excluido = TRUE`) quando o colaborador possui encomendas vinculadas.
 
 ---
 
 ### Função 2: Gerenciar Clientes (CRM)
-* **Objetivo**: Cadastro e manutenção de dados de clientes, englobando informações de contato e preferências alimentares.
-* **Diagrama de Classes**:
-  * **Classe**: `Cliente`
-  * **Atributos**: `Id: int`, `Nome: string`, `Cpf: string`, `Email: string`, `Senha: string` (nulo se cadastrado sem conta), `Telefone: string`, `RestricaoGluten: bool`, `RestricaoLactose: bool`, `RestricaoAcucar: bool`, `Ativo: bool`.
-  * **Métodos**: `Criar(Cliente)`, `Listar()`, `Alterar(Cliente)`, `Excluir(id)`.
-* **Diagrama ER**:
-  * **Tabela**: `cliente`
-  * **Colunas**: `id` (PK), `nome`, `cpf`, `email` (UNIQUE), `senha`, `telefone`, `restricao_gluten`, `restricao_lactose`, `restricao_acucar`, `ativo`.
-* **Diretiva de Modelagem**: Relacionamento 1:N com a classe `Encomenda`. Clientes inativados têm `ativo = false` para preservar dados de encomendas antigas.
+* **Classificação / Complexidade / Situação**: Básica · BAIXA · **Concluída**
+* **Objetivo**: Gerenciar o cadastro de clientes com validação de CPF/e-mail únicos e mapeamento obrigatório de restrições alimentares (Glúten, Lactose e Açúcar).
+* **Arquitetura e Classes**:
+  * **Entidade**: `Cliente` (`Id`, `Nome`, `Cpf`, `Email`, `Senha`, `Telefone`, `RestricaoGluten`, `RestricaoLactose`, `RestricaoAcucar`, `Ativo`, `BloqueadoEncomendas`, `MotivoBloqueio`).
+  * **Backend**: `ClientesController` → `ClienteServices` → `ClienteRepository`.
+  * **Frontend**: `/registro` ([`registro/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/registro/page.tsx)) e `/perfil` ([`perfil/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/perfil/page.tsx)).
+* **Banco de Dados (`cliente`)**: Relacionamento `1:N` com `encomenda`; desativação lógica (`ativo = FALSE`) preservando histórico fiscal e financeiro.
 
 ---
 
 ### Função 3: Gerenciar Categorias de Produtos
-* **Objetivo**: Classificar os produtos vendidos no sistema para facilitação do filtro de busca e relatórios.
-* **Diagrama de Classes**:
-  * **Classe**: `Categoria`
-  * **Atributos**: `Id: int`, `Descricao: string`, `Inativo: bool`.
-  * **Métodos**: `Criar(Categoria)`, `Listar()`, `Alterar(Categoria)`, `Excluir(id)`.
-* **Diagrama ER**:
-  * **Tabela**: `categoria`
-  * **Colunas**: `id` (PK), `descricao`, `inativo`.
-* **Diretiva de Modelagem**: Relacionamento de 1:N com `Produto`. Se uma categoria possui produtos ativos e for solicitada sua exclusão, ela deve apenas ser marcada como `inativa = true`.
+* **Classificação / Complexidade / Situação**: Básica · BAIXA · **Concluída**
+* **Objetivo**: Organizar o cardápio de encomendas em categorias (ex.: *Pães*, *Bolos de Festa*, *Salgados*, *Doces*).
+* **Arquitetura e Classes**:
+  * **Entidade**: `Categoria` (`Id`, `Descricao`, `Inativo`).
+  * **Backend**: `CategoriasController` → `CategoriaService` → `CategoriaRepository`.
+  * **Frontend**: `/categorias` ([`categorias/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/categorias/page.tsx)).
+* **Banco de Dados (`categoria`)**: Relacionamento `1:N` com `produto`. Caso possua produtos atrelados, a exclusão converte-se automaticamente em inativação lógica (`inativo = TRUE`).
 
 ---
 
 ### Função 4: Gerenciar Produtos
-* **Objetivo**: Cadastro do catálogo de produtos físicos, preços e restrições alimentares.
-* **Diagrama de Classes**:
-  * **Classe**: `Produto`
-  * **Atributos**: `Id: int`, `Nome: string`, `PrecoUnitario: decimal`, `CategoriaId: int`, `ImagemUrl: string`, `Descricao: string`, `PermiteCustomizacao: bool`, `TemplateCustomizacao: string` (JSON), `ContemGluten: bool`, `ContemLactose: bool`, `ContemAcucar: bool`.
-  * **Associação**: `Categoria` (Propriedade de Navegação), `Receita` (1:1 opcional).
-  * **Métodos**: `Criar(Produto)`, `Listar()`, `Alterar(Produto)`, `Excluir(id)`.
-* **Diagrama ER**:
-  * **Tabela**: `produto`
-  * **Colunas**: `id` (PK), `nome`, `preco_unitario` (NUMERIC), `categoria_id` (FK `categoria`), `imagem_url`, `descricao`, `permite_customizacao`, `template_customizacao` (JSONB), `contem_gluten`, `contem_lactose`, `contem_acucar`.
-* **Diretiva de Modelagem**:
-  * Chave Estrangeira: `categoria_id` aponta para `categoria(id)`.
-  * Relacionamento 1:N com `ItemEncomenda` e 1:1 com `Receita`.
+* **Classificação / Complexidade / Situação**: Básica · BAIXA · **Concluída**
+* **Objetivo**: Cadastrar e manter os itens do catálogo com foto (`ImagemUrl`), preço unitário, categoria, composição alergênica e configuração de campos personalizáveis.
+* **Arquitetura e Classes**:
+  * **Entidade**: `Produto` (`Id`, `Nome`, `PrecoUnitario`, `CategoriaId`, `ImagemUrl`, `Descricao`, `PermiteCustomizacao`, `TemplateCustomizacao`, `ContemGluten`, `ContemLactose`, `ContemAcucar`).
+  * **Backend**: `ProdutosController` → `ProdutoServices` → `ProdutoRepository`.
+  * **Frontend**: `/produtos` ([`produtos/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/produtos/page.tsx)) e vitrine pública `/catalogo` ([`catalogo/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/catalogo/page.tsx)).
+* **Banco de Dados (`produto`)**: Persistência de `template_customizacao` em `JSONB` e proteção de integridade referencial (`SQLSTATE 23503`) caso o item já conste em encomendas.
 
 ---
 
 ### Função 5: Gerenciar Receitas (Módulo Privado)
-* **Objetivo**: Armazenar as fórmulas de preparo dos produtos com acesso confidencial para a cozinha.
-* **Diagrama de Classes**:
-  * **Classe**: `Receita`
-  * **Atributos**: `Id: int`, `ProdutoId: int`, `Ingredientes: string`, `ModoPreparo: string`, `Rendimento: string`.
-  * **Métodos**: `Salvar(Receita)`, `ObterPorProduto(produtoId)`.
-* **Diagrama ER**:
-  * **Tabela**: `receita`
-  * **Colunas**: `id` (PK), `produto_id` (FK `produto` UNIQUE), `ingredientes` (TEXT), `modo_preparo` (TEXT), `rendimento`.
-* **Diretiva de Modelagem**: Relacionamento 1:1 com `Produto`. A chave estrangeira `produto_id` deve possuir uma restrição de unicidade (`UNIQUE`) e deleção em cascata (`ON DELETE CASCADE`), pois a receita não existe sem o produto.
+* **Classificação / Complexidade / Situação**: Básica · MÉDIA · **Concluída**
+* **Objetivo**: Proteger o segredo industrial da panificadora armazenando ingredientes, modo de preparo e rendimento vinculados a cada produto, além de permitir impressão limpa para a cozinha.
+* **Arquitetura e Classes**:
+  * **Entidade**: `Receita` (`Id`, `ProdutoId`, `Ingredientes`, `ModoPreparo`, `Rendimento`).
+  * **Backend**: `ProdutosController` (`GET /Produtos/com-receitas`, `PUT /Produtos/{id}/receita`) → `ProdutoServices` → `ReceitaRepository` (`Salvar` com *upsert*).
+  * **Frontend**: `/receitas` ([`receitas/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/receitas/page.tsx)).
+* **Banco de Dados (`receita`)**: Relacionamento `1:1` estrito com `produto` (`produto_id UNIQUE REFERENCES produto(id) ON DELETE CASCADE`).
 
 ---
 
 ### Função 6: Gerenciar Permissões de Receitas
-* **Objetivo**: Validar se o usuário logado possui a credencial necessária para visualizar receitas (ex: apenas perfil Administrador ou Padeiro).
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `Usuario` (especificamente `PerfilEnum`), `TokenService` ou `AuthService`.
-  * **Método**: `ValidarAcessoReceita(Usuario)` ou verificação via anotação de rota (ex: `Authorize(Roles="Admin")`).
-* **Diagrama ER**: Não demanda tabela própria no banco. É uma checagem comportamental baseada na coluna `usuario.perfil_enum`.
-* **Diretiva de Modelagem**: No Diagrama de Classes de Contexto, adicione uma dependência entre o controlador de Receitas/Produtos e o serviço de autenticação (`TokenService`).
+* **Classificação / Complexidade / Situação**: Básica · BAIXA · **Concluída**
+* **Objetivo**: Restringir a visualização e a edição das fichas técnicas de receitas conforme o perfil autenticado (`PerfilEnum` e token JWT), ocultando dados industriais de clientes externos e restringindo edições.
+* **Arquitetura e Classes**:
+  * **Classes Envolvidas**: `Usuario` (`PerfilEnum`: `0 = Admin`, `1 = Funcionario`), `TokenService` (claims `ClaimTypes.Role` no JWT), `Sidebar` e `ReceitasPage`.
+* **Diretiva de Modelagem**: Controle comportamental baseado em `usuario.perfil_enum` e validação de sessão JWT (`Bearer` / Cookie `HttpOnly`), exibindo o módulo apenas para operadores internos autorizados e reservando alterações cadastrais ao Administrador.
 
 ---
 
 ### Função 7: Efetuar Encomenda Personalizada
-* **Objetivo**: Criação de pedidos com múltiplos itens, datas agendadas de retirada e cálculo de valores.
-* **Diagrama de Classes**:
-  * **Classes**: `Encomenda` e `ItemEncomenda`.
-  * **Atributos de `Encomenda`**: `Id: int`, `ClienteId: int?`, `UsuarioId: int?`, `DataEntrega: DateTime`, `Status: StatusEnum`, `ValorTotal: decimal`, `Observacao: string`.
-  * **Composição**: Lista de `ItemEncomenda`.
-  * **Métodos**: `Criar(Encomenda)`, `ObterPorId(id)`, `ListarComDetalhes()`.
-* **Diagrama ER**:
-  * **Tabela**: `encomenda`
-  * **Colunas**: `id` (PK), `cliente_id` (FK `cliente`, NULLABLE), `usuario_id` (FK `usuario`, NULLABLE), `data_retirada` (TIMESTAMP), `valor_total`, `status_enum` (INT), `observacao`.
-* **Diretiva de Modelagem**: Relação de agregação fraca com `Cliente` (pois o cliente_id pode ser nulo se for venda rápida/avulsa) e composição forte de `Encomenda` para com `ItemEncomenda` (remover Encomenda remove seus itens).
+* **Classificação / Complexidade / Situação**: Fundamental · ALTA · **Concluída**
+* **Objetivo**: Lançar encomendas vinculadas ao cliente, validando antecedência mínima de 24h, horário comercial de retirada (Seg–Sáb, 08h–18h) e recalculando preços no servidor com transação atômica.
+* **Arquitetura e Classes**:
+  * **Entidades**: `Encomenda` e `ItemEncomenda`.
+  * **Backend**: `EncomendaController` (`POST /api/Encomenda`) → `EncomendaServices` → `EncomendaRepository` (transação `BeginTransaction` / `Commit` / `Rollback`).
+  * **Frontend**: `/nova-encomenda` ([`nova-encomenda/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx)).
+* **Banco de Dados (`encomenda` + `item_encomenda`)**: Composição forte `1:N` com gravação do `preco_no_ato` para integridade histórica.
 
 ---
 
 ### Função 8: Vincular Especificações Técnicas ao Pedido
-* **Objetivo**: Anexar as customizações escolhidas para cada item da encomenda (ex: sabor do recheio, texto personalizado escrito no bolo).
-* **Diagrama de Classes**:
-  * **Classe**: `ItemEncomenda`
-  * **Atributos**: `Id: int`, `EncomendaId: int`, `ProdutoId: int`, `Quantidade: int`, `PrecoUnitario: decimal`, `EspecificacoesTecnicas: string` (representação JSON das customizações).
-* **Diagrama ER**:
-  * **Tabela**: `item_encomenda`
-  * **Colunas**: `id` (PK), `encomenda_id` (FK `encomenda`), `produto_id` (FK `produto`), `quantidade`, `preco_no_ato` (NUMERIC), `especificacoes_tecnicas` (JSONB).
-* **Diretiva de Modelagem**: A coluna `especificacoes_tecnicas` é mapeada como `JSONB` no Postgres para permitir estruturas flexíveis de personalização de acordo com o produto.
+* **Classificação / Complexidade / Situação**: Fundamental · MÉDIA · **Concluída**
+* **Objetivo**: Registrar e editar customizações específicas por item do pedido (massa, recheio, tema, frase escrita no bolo e observações individuais) a partir do template configurado no produto.
+* **Arquitetura e Classes**:
+  * **Entidade**: `ItemEncomenda` (`EspecificacoesTecnicas: string` serializado em JSON).
+  * **Frontend**: Modal dinâmico de personalização em [`nova-encomenda/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx) gerado a partir de `produto.templateCustomizacao`.
+* **Banco de Dados (`item_encomenda.especificacoes_tecnicas`)**: Coluna nativa `JSONB` no PostgreSQL.
 
 ---
 
 ### Função 9: Validar Alertas de Segurança Alimentar
-* **Objetivo**: Comparar automaticamente as restrições de alergia do cliente logado com os ingredientes/alertas do produto a ser adicionado ao carrinho, emitindo um alerta visual informativo no ato de adicionar ao carrinho.
-* **Status**: **Concluído via Frontend** (implementado no React no componente de criação de encomenda).
-* **Diagrama de Classes**:
-  * **Componentes/Classes Envolvidas**: Componente `NovaEncomenda` (função `handleAddClick`), modelo `Cliente`, modelo `Produto`.
-* **Diagrama ER**: Não exige tabelas adicionais. A validação cruza dados de restrições das tabelas através das colunas:
-  * `cliente.restricao_gluten` com `produto.contem_gluten`.
-  * `cliente.restricao_lactose` com `produto.contem_lactose`.
-  * `cliente.restricao_acucar` com `produto.contem_acucar`.
-* **Diretiva de Modelagem**: No Diagrama de Classes de Contexto, representar a validação realizada na controladora/componente da interface do usuário de pedidos, lendo os atributos booleanos de ambas as classes.
-
+* **Classificação / Complexidade / Situação**: Fundamental · MÉDIA · **Concluída**
+* **Objetivo**: Emitir alertas preventivos automáticos sempre que um cliente com restrição a Glúten, Lactose ou Açúcar selecionar um produto que contenha tais ingredientes, exigindo ciência explícita antes de adicionar ao pedido.
+* **Arquitetura e Classes**:
+  * ** Modelos Cruzados**: `Cliente` (`RestricaoGluten`, `RestricaoLactose`, `RestricaoAcucar`) × `Produto` (`ContemGluten`, `ContemLactose`, `ContemAcucar`).
+  * **Frontend**: Banner de perfil ativo + modal crítico `healthAlertModalOpen` em [`nova-encomenda/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/nova-encomenda/page.tsx).
 
 ---
 
-### Função 10: Registrar Recebimento de Sinal (50%)
-* **Objetivo**: Registrar a entrada financeira de garantia (sinal mínimo de 50%) obrigatória para encomendas personalizadas.
-* **Diagrama de Classes**:
-  * **Classes**: `Pagamento` e `Caixa`.
-  * **Atributos de `Pagamento`**: `Id: int`, `EncomendaId: int`, `CaixaId: int`, `ValorSinal: decimal`, `SaldoDevedor: decimal`, `FormaPgtoSinal: string`.
-  * **Método**: `RegistrarPagamentoSinal(Pagamento)`.
-* **Diagrama ER**:
-  * **Tabela**: `pagamento`
-  * **Colunas**: `id` (PK), `encomenda_id` (FK `encomenda` ON DELETE CASCADE), `caixa_id` (FK `caixa`), `valor_sinal` (NUMERIC), `saldo_devedor` (NUMERIC), `forma_pagamento_sinal` (VARCHAR), `status` (VARCHAR).
-* **Diretiva de Modelagem**:
-  * `ValorSinal` deve ser `>= 50%` do `Encomenda.ValorTotal`.
-  * A tabela `pagamento` deve possuir uma FK apontando para `caixa(id)` para vincular a entrada financeira ao turno operacional da loja.
+### Função 10: Registrar Recebimento de Sinal / Pagamento da Encomenda
+* **Classificação / Complexidade / Situação**: Fundamental · MÉDIA · **Concluída**
+* **Objetivo**: Registrar o compromisso financeiro da encomenda no ato do pedido, suportando pagamento online via **Mercado Pago Checkout Pro** (Pix, Cartão de Crédito/Débito, integral ou sinal de 50%) ou agendamento de pagamento presencial no balcão.
+* **Arquitetura e Classes**:
+  * **Entidade**: `Pagamento` (`Id`, `EncomendaId`, `ValorTotal`, `ValorSinal`, `SaldoDevedor`, `FormaPgtoSinal`, `FormaPagamento`, `Status`, `PreferenceId`, `MpPaymentId`).
+  * **Backend**: `PagamentosController` (`POST /api/pagamentos/gerar-preferencia`, `POST /api/pagamentos/webhook`, `POST /api/pagamentos/confirmar-retorno`, `POST /api/pagamentos/registrar-presencial`) → `PagamentoService` (`CalcularSinal`, `GerarPreferenciaAsync`, `ConfirmarRetornoMercadoPagoAsync`, `RegistrarPagamentoPresencial`) → `PagamentoRepository`.
+* **Banco de Dados (`pagamento`)**: Relacionamento `1:1` com `encomenda`, armazenando `preference_id`, `mp_payment_id` e saldo a receber.
 
 ---
 
 ### Função 11: Consultar Histórico de Inadimplência por CPF
-* **Objetivo**: Antes de aprovar uma nova encomenda, verificar se o cliente possui dívidas anteriores não liquidadas no sistema.
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `ClienteService` ou `ClienteRepository`.
-  * **Método**: `ConsultarInadimplenciaPorCpf(cpf: string): bool`.
-* **Diagrama ER**: Consulta relacional.
-  * Seleciona `cliente` pelo CPF.
-  * Busca em `encomenda` e `pagamento` registros vinculados a este cliente cujo status do pagamento esteja como `'pendente'` ou `'atrasado'` e o `saldo_devedor > 0`.
-* **Diretiva de Modelagem**: Modelar no `ClienteService` a operação de verificação, que gera uma consulta agregada no banco.
+* **Classificação / Complexidade / Situação**: Fundamental · MÉDIA · **Concluída**
+* **Objetivo**: Verificar automaticamente pendências financeiras anteriores por CPF/ID antes de aprovar novos pedidos online (emitindo aviso com 1 pendência e bloqueando a partir de 2 pendências ou bloqueio administrativo) e disponibilizar painel gerencial de cobrança por e-mail.
+* **Arquitetura e Classes**:
+  * **Backend**: `AdminInadimplenciaController` (`GET /api/admin/inadimplencia`, `GET /api/clientes/verificar-cpf/{cpf}`, `GET /api/clientes/{id}/verificar-situacao`, `PATCH /api/admin/clientes/{id}/bloqueio`, `POST /api/admin/clientes/{id}/notificar-cobranca`) → `ClienteServices` → `ClienteRepository` (`ObterSituacaoFinanceiraCliente`, `ListarInadimplentes`, `AtualizarBloqueio`) + `EmailService` (`EnviarNotificacaoInadimplenciaAsync`).
+  * **Frontend**: Painel `/admin/inadimplencia` ([`admin/inadimplencia/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/inadimplencia/page.tsx)) e trava automática no carrinho em `/nova-encomenda`.
 
 ---
 
 ### Função 12: Gerar Ordem de Produção Técnica
-* **Objetivo**: Exportar a ficha de fabricação para a cozinha, contendo a lista de itens da encomenda, as observações técnicas/customizações e a receita detalhada de cada produto.
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `ProducaoService` ou `EncomendaService`.
-  * **Método**: `ObterFichaTecnicaProducao(encomendaId: int): FichaProducaoDTO`.
-* **Diagrama ER**: Não demanda nova tabela. Trata-se de uma View lógica que junta `encomenda`, `item_encomenda`, `produto` e `receita`.
-* **Diretiva de Modelagem**: Representar como um método de serviço que compõe informações de múltiplas entidades para gerar um documento DTO de saída.
+* **Classificação / Complexidade / Situação**: Fundamental · BAIXA · **Concluída**
+* **Objetivo**: Consolidar para a equipe de fabricação os dados técnicos do pedido (`#ID`, cliente, horário de retirada, itens, especificações personalizadas em destaque e observações, sem expor dados financeiros sensíveis) com suporte a visualização detalhada e impressão para a cozinha.
+* **Arquitetura e Classes**:
+  * **Backend**: `EncomendaController` (`GET /api/Encomenda/detalhes` e `GET /api/Encomenda/{id}`) → `EncomendaServices` → `EncomendaRepository` (JOIN entre `encomenda`, `cliente`, `item_encomenda` e `produto`).
+  * **Frontend**: Visualização e emissão de ficha de produção em [`producao/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx) e consulta técnica em [`receitas/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/receitas/page.tsx).
 
 ---
 
 ### Função 13: Visualizar Cronograma de Produção
-* **Objetivo**: Exibir no painel da fábrica a lista de encomendas ativas, ordenadas cronologicamente pelo horário limite de retirada.
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `EncomendaService`, `EncomendaRepository`.
-  * **Método**: `ListarCronogramaProducao(): List<Encomenda>`.
-* **Diagrama ER**: Consulta SQL filtrando `encomenda.status_enum` (onde status seja `0` - Pendente ou `1` - Em Andamento) ordenado por `encomenda.data_retirada` ASC.
-* **Diretiva de Modelagem**: Representar como um filtro comportamental na classe de repositório da Encomenda.
+* **Classificação / Complexidade / Situação**: Fundamental · MÉDIA · **Concluída**
+* **Objetivo**: Exibir em tempo real a fila de encomendas organizada cronologicamente pela data/horário de retirada e filtrada por fase produtiva, destacando pedidos urgentes do dia.
+* **Arquitetura e Classes**:
+  * **Backend**: `EncomendaRepository.ListarComDetalhes()` ordenado por `data_retirada ASC`.
+  * **Frontend**: Painel `/producao` ([`producao/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx)) e visão completa em `/historico` ([`historico/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/historico/page.tsx)).
 
 ---
 
 ### Função 14: Atualizar Status da Produção
-* **Objetivo**: Controlar o avanço da produção na cozinha (ex: marcar um bolo que estava "Pendente" para "Em Andamento").
-* **Diagrama de Classes**:
-  * **Classe**: `Encomenda` (ou `EncomendaService`).
-  * **Método**: `AtualizarStatus(encomendaId: int, novoStatus: StatusEnum)`.
-* **Diagrama ER**:
-  * **Tabela afetada**: `encomenda`
-  * **Coluna atualizada**: `status_enum`.
-* **Diretiva de Modelagem**: Mapeia diretamente o ciclo de transição de estados de `StatusEnum` na classe `Encomenda`.
+* **Classificação / Complexidade / Situação**: Fundamental · BAIXA · **Concluída**
+* **Objetivo**: Permitir que confeiteiros e padeiros avancem o estado de preparo da encomenda (`Pendente` → `Em Andamento`), refletindo o progresso instantaneamente na área *Minhas Encomendas* do cliente.
+* **Arquitetura e Classes**:
+  * **Backend**: `EncomendaController.AtualizarStatus` (`PATCH /api/Encomenda/{id}/status`) → `EncomendaServices` → `EncomendaRepository.AtualizarStatus`.
+  * **Frontend**: Ação direta nos cards de `/producao` ([`producao/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/producao/page.tsx)).
 
 ---
 
 ### Função 15: Registrar Conclusão de Encomenda
-* **Objetivo**: Concluir a fabricação. Altera o status para "Concluída" (pronta para retirada) e engatilha notificações automáticas para o cliente.
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `EncomendaService`, `NotificacaoService` (Serviço externo).
-  * **Método**: `ConcluirProducao(encomendaId: int)`.
-* **Diagrama ER**:
-  * **Tabela afetada**: `encomenda`
-  * **Coluna atualizada**: `status_enum` (definida como `2` - Concluida).
-* **Diretiva de Modelagem**: O método de serviço atualiza o banco e invoca a interface/classe `NotificacaoService`.
+* **Classificação / Complexidade / Situação**: Fundamental · BAIXA · **Concluída**
+* **Objetivo**: Marcar a fabricação do pedido como finalizada (`StatusEnum.Concluida = 2` — *Pronto para Retirada*), disponibilizando-o imediatamente na fila de entrega do balcão (`/retirada`) e atualizando a linha do tempo do cliente.
+* **Arquitetura e Classes**:
+  * **Backend**: `EncomendaController.AtualizarStatus` (`status = 2`) → `EncomendaServices` → `EncomendaRepository`.
+  * **Frontend**: Aba *Prontas / Concluídas* em `/producao` e habilitação automática em `/retirada`.
 
 ---
 
 ### Função 16: Registrar Entrega e Retirada de Pedido
-* **Objetivo**: Registrar no sistema o momento exato em que o cliente veio buscar o pedido e qual funcionário realizou a entrega.
-* **Diagrama de Classes**:
-  * **Classes**: `Encomenda`, `Usuario` (operador da entrega).
-  * **Atributos Atualizados**: `DataEntregaReal: DateTime`, `UsuarioEntregaId: int`, `Status: StatusEnum` (definido como Entregue).
-  * **Método**: `RegistrarEntrega(encomendaId: int, usuarioId: int)`.
-* **Diagrama ER**:
-  * **Tabela**: `encomenda`
-  * **Colunas Atualizadas**: `data_entrega_real` (TIMESTAMP), `usuario_entrega_id` (FK `usuario`), `status_enum` (atualizado para `4` - Entregue).
-* **Diretiva de Modelagem**: Relacionamento N:1 entre `encomenda` e `usuario` específico para o papel de entregador (`usuario_entrega_id` referenciando `usuario(id)`).
+* **Classificação / Complexidade / Situação**: Fundamental · BAIXA · **Concluída**
+* **Objetivo**: Confirmar a retirada física da encomenda pelo cliente no balcão, validando previamente a quitação financeira e gravando o horário exato (`data_entrega_real`) e o colaborador responsável (`usuario_entrega_id`).
+* **Arquitetura e Classes**:
+  * **Backend**: `EncomendaController.RegistrarEntrega` (`POST /api/Encomenda/{id}/entrega`) → `EncomendaServices` → `EncomendaRepository.RegistrarEntrega`.
+  * **Frontend**: `/retirada` ([`retirada/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/retirada/page.tsx)).
+* **Banco de Dados (`encomenda`)**: Atualiza `status_enum = 4` (*Entregue*), `data_entrega_real` e `usuario_entrega_id`.
 
 ---
 
 ### Função 17: Liquidar Saldo Devedor na Entrega
-* **Objetivo**: Cobrar e registrar o recebimento dos 50% restantes da encomenda no ato da entrega física, zerando o débito da transação.
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `Pagamento`, `Caixa`, `EncomendaService`.
-  * **Atributos Modificados**: `Pagamento.SaldoDevedor` (definido como `0.00`), `Pagamento.Status` (definido como `'pago'`), `Pagamento.FormaPgtoRestante: string`.
-  * **Método**: `LiquidarSaldo(encomendaId: int, formaPagamento: string, caixaId: int)`.
-* **Diagrama ER**:
-  * **Tabela**: `pagamento`
-  * **Colunas Atualizadas**: `saldo_devedor = 0`, `status = 'pago'`, `forma_pagamento` (ex: `'Pix'`, `'Dinheiro'`).
-* **Diretiva de Modelagem**: Uma restrição lógica impede a execução da entrega da encomenda (Função 16) se o status do pagamento correspondente não estiver como `'pago'`.
+* **Classificação / Complexidade / Situação**: Fundamental · MÉDIA · **Concluída**
+* **Objetivo**: Dar baixa financeira no balcão das encomendas com pagamento presencial ou saldo restante, permitindo escolher a forma de pagamento (*Dinheiro*, *Pix*, *Cartão de Crédito/Débito*), zerando `saldo_devedor` e liberando a entrega.
+* **Arquitetura e Classes**:
+  * **Backend**: `PagamentosController` (`GET /api/pagamentos/pendentes` e `POST /api/pagamentos/liquidar`) → `PagamentoService.LiquidarSaldo` → `PagamentoRepository.LiquidarSaldo`.
+  * **Frontend**: `/admin/cobranca` ([`admin/cobranca/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/cobranca/page.tsx)).
 
 ---
 
-### Função 18: Abrir/Fechar Caixa de Encomendas
-* **Objetivo**: Abrir o turno financeiro do dia com um valor de troco inicial e fechá-lo apurando as entradas totais recebidas de sinais e liquidações.
-* **Diagrama de Classes**:
-  * **Classe**: `Caixa`
-  * **Atributos**: `Id: int`, `DataAbertura: DateTime`, `ValorInicial: decimal`, `Status: string` ("Aberto", "Fechado"), `DataFechamento: DateTime?`, `ValorFinal: decimal?`.
-  * **Métodos**: `AbrirCaixa(valorInicial: decimal)`, `FecharCaixa(caixaId: int, valorFinal: decimal)`.
-* **Diagrama ER**:
-  * **Tabela**: `caixa`
-  * **Colunas**: `id` (PK), `data_abertura` (TIMESTAMP), `valor_inicial` (NUMERIC), `status` (VARCHAR), `data_fechamento` (TIMESTAMP, NULLABLE), `valor_final` (NUMERIC, NULLABLE).
-* **Diretiva de Modelagem**: Relacionamento 1:N entre `Caixa` e `Pagamento`. Cada pagamento financeiro efetuado no sistema obrigatoriamente vincula-se a um caixa que esteja com status `'Aberto'`.
+### Função 18: Recuperar Senha e Validar Operações de Conta com Token por E-mail
+* **Classificação / Complexidade / Situação**: Fundamental · MÉDIA · **Concluída**
+* **Objetivo**: Garantir segurança de autenticação em duas etapas por e-mail através de códigos numéricos temporários de 6 dígitos (expiração de 15 minutos e invalidação automática de códigos anteriores) para três fluxos críticos: **Recuperação de Senha**, **Alteração de Perfil/Senha** e **Exclusão Lógica de Conta (LGPD)**.
+* **Arquitetura e Classes**:
+  * **Entidade**: `TokenAutenticacao` (`Id`, `ClienteId`, `CodigoToken`, `TipoToken`, `DataExpiracao`, `Utilizado`, `DataCriacao`).
+  * **Backend**: `ClientesController` (`POST /Clientes/solicitar-recuperacao-senha`, `POST /Clientes/redefinir-senha`, `POST /Clientes/solicitar-codigo-alteracao`, `PUT /Clientes/perfil-com-codigo`, `POST /Clientes/solicitar-exclusao-conta`, `POST /Clientes/confirmar-exclusao-conta`) → `ClienteServices` → `TokenAutenticacaoRepository` + `EmailService` (envio HTML via API HTTPS **Resend** / **MailKit**).
+  * **Frontend**: Modais de verificação de 6 dígitos em `/login` ([`login/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/login/page.tsx)) e `/perfil` ([`perfil/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/perfil/page.tsx)).
+* **Banco de Dados (`token_autenticacao`)**: Suporta tanto clientes (`cliente_id > 0`) quanto operadores internos (`cliente_id < 0` na recuperação de senha).
 
 ---
 
 ### Função 19: Dashboard de Desempenho Diário
-* **Objetivo**: Exibir na tela gerencial os totais faturados no dia atual, contagem de pedidos entregues, pendentes e novos clientes.
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `DashboardService`, `DashboardDTO`.
-  * **Método**: `ObterDadosDashboardDiario(data: DateTime): DashboardDTO`.
-* **Diagrama ER**: Não há tabelas dedicadas. Lógica executada através de agregações (`SUM`, `COUNT`) e agrupamentos (`GROUP BY`) nas tabelas `pagamento` (para faturamento), `encomenda` (para quantidades por status) e `cliente` (cadastros na data).
-* **Diretiva de Modelagem**: Classe de serviço com dependência em múltiplos repositórios (`EncomendaRepository`, `ClienteRepository`, `PagamentoRepository`).
+* **Classificação / Complexidade / Situação**: Saída · MÉDIA · **Concluída**
+* **Objetivo**: Apresentar em tempo real os indicadores operacionais e financeiros do dia (Faturamento Confirmado, Saldo Pendente a Receber, Total de Encomendas e Ticket Médio), permitindo acompanhamento imediato pela gerência.
+* **Arquitetura e Classes**:
+  * **DTOs**: `DashboardResponseDTO`, `PagamentoFormaDTO`, `EvolucaoDiaDTO`.
+  * **Backend**: `PagamentosController.ObterDashboard` (`GET /api/pagamentos/dashboard`) → `PagamentoService.ObterDadosDashboard` → `PagamentoRepository.ObterDadosDashboard`.
+  * **Frontend**: `/admin/dashboard` ([`admin/dashboard/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/dashboard/page.tsx)).
 
 ---
 
 ### Função 20: Emitir Relatório Estratégico Mensal
-* **Objetivo**: Compilar e exportar um relatório consolidado com o faturamento mensal, ranking de produtos mais pedidos, e clientes inadimplentes.
-* **Diagrama de Classes**:
-  * **Classes Envolvidas**: `RelatorioService`, `RelatorioMensalDTO`.
-  * **Método**: `GerarRelatorioMensal(ano: int, mes: int): RelatorioMensalDTO`.
-* **Diagrama ER**: Não requer tabelas adicionais. Utiliza queries complexas de junção (`JOIN`) e agregação temporal cruzando as tabelas `encomenda`, `item_encomenda`, `produto`, `pagamento` e `cliente`.
-* **Diretiva de Modelagem**: Serviço gerador de relatórios com métodos utilitários de renderização de PDF ou planilhas. Depende da integridade histórica de preços e vínculos do banco.
+* **Classificação / Complexidade / Situação**: Saída · ALTA · **Concluída**
+* **Objetivo**: Processar e consolidar estatísticas estratégicas por período customizável (`dataInicio` e `dataFim` / visão mensal), exibindo faturamento por modalidade (*Dinheiro*, *Cartão*, *Pix*, *Mercado Pago*), evolução diária de receita, ranking dos produtos mais vendidos e exportação/impressão gerencial.
+* **Arquitetura e Classes**:
+  * **DTOs**: `DashboardResponseDTO` (`ProdutosMaisVendidos: List<ProdutoMaisVendidoDTO>`, `PagamentosPorForma: List<PagamentoFormaDTO>`, `EvolucaoFaturamento: List<EvolucaoDiaDTO>`).
+  * **Backend**: Consultas SQL analíticas agregadas (`SUM`, `COUNT`, `GROUP BY`) cruzando `encomenda`, `item_encomenda`, `produto` e `pagamento` em `PagamentoRepository.ObterDadosDashboard(dataInicio, dataFim)`.
+  * **Frontend**: Filtros de período, gráficos comparativos, tabelas de ranking e impressão de relatório em [`admin/dashboard/page.tsx`](file:///Users/germano/Documents/SGEP/frontend/src/app/admin/dashboard/page.tsx).

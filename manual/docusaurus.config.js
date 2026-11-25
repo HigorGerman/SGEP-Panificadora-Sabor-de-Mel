@@ -7,7 +7,7 @@ const config = {
   tagline: 'Sistema de Gestão de Encomendas para Panificadora Sabor de Mel',
   favicon: 'img/favicon.svg',
 
-  url: 'https://sgep-panificadora-sabor-de-mel.vercel.app',
+  url: 'https://sgep-manual.vercel.app',
   baseUrl: '/',
 
   organizationName: 'HigorGerman',

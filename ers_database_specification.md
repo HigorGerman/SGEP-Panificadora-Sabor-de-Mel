@@ -1,51 +1,64 @@
 # Especificação de Requisitos de Software (ERS)
-## Documentação do Banco de Dados - SGEP (Panificadora Sabor de Mel)
+## Documentação do Banco de Dados — SGEP (Panificadora e Mercado Sabor de Mel)
 
-Esta seção da documentação detalha a estrutura do banco de dados relacional (PostgreSQL) do **SGEP**, contendo o Diagrama de Entidade-Relacionamento (DER), o dicionário de dados de todas as tabelas com seus respectivos campos e tipos, e a descrição detalhada das relações e chaves.
+**Versão de Entrega Final — Estágio Supervisionado FIPP/Unoeste (02/2026)**  
+**Aluno:** Higor Germano Cerqueira · **Orientadora:** Carolina Dias Chaves Corvetto
+
+Esta documentação detalha a estrutura consolidada do banco de dados relacional **PostgreSQL** do **SGEP**, contendo o Diagrama Entidade-Relacionamento (DER), o dicionário de dados completo de todas as tabelas e a descrição das relações e restrições de integridade referencial, em total conformidade com o script [`init.sql`](file:///Users/germano/Documents/SGEP/init.sql) e com o inicializador automático [`DatabaseInitializer.cs`](file:///Users/germano/Documents/SGEP/BackEnd/BackEnd/Repository/DatabaseInitializer.cs).
 
 ---
 
-## 1. Diagrama de Entidade-Relacionamento (DER)
-
-Abaixo está o modelo conceitual de relações entre as tabelas do sistema:
+## 1. Diagrama Entidade-Relacionamento (DER)
 
 ```mermaid
 erDiagram
     usuario {
         int id PK
-        string usuario_nome
-        string email
-        string senha
+        varchar usuario_nome
+        varchar email UK
+        varchar senha
         int perfil_enum
         boolean excluido
     }
 
     cliente {
         int id PK
-        string nome
-        string cpf
-        string email
-        string senha
-        string telefone
+        varchar nome
+        varchar cpf UK
+        varchar email UK
+        varchar senha
+        varchar telefone
         boolean restricao_gluten
         boolean restricao_lactose
         boolean restricao_acucar
         boolean ativo
+        boolean bloqueado_encomendas
+        varchar motivo_bloqueio
+    }
+
+    token_autenticacao {
+        int id PK
+        int cliente_id
+        varchar codigo_token
+        varchar tipo_token
+        timestamp data_expiracao
+        boolean utilizado
+        timestamp data_criacao
     }
 
     categoria {
         int id PK
-        string descricao
+        varchar descricao
         boolean inativo
     }
 
     produto {
         int id PK
-        string nome
+        varchar nome
         numeric preco_unitario
         int categoria_id FK
-        string imagem_url
-        string descricao
+        varchar imagem_url
+        text descricao
         boolean permite_customizacao
         jsonb template_customizacao
         boolean contem_gluten
@@ -56,9 +69,9 @@ erDiagram
     receita {
         int id PK
         int produto_id FK
-        string ingredientes
-        string modo_preparo
-        string rendimento
+        text ingredientes
+        text modo_preparo
+        varchar rendimento
     }
 
     encomenda {
@@ -68,7 +81,7 @@ erDiagram
         timestamp data_retirada
         numeric valor_total
         int status_enum
-        string observacao
+        text observacao
         timestamp data_entrega_real
         int usuario_entrega_id FK
     }
@@ -82,168 +95,210 @@ erDiagram
         jsonb especificacoes_tecnicas
     }
 
+    caixa {
+        int id PK
+        timestamp data_abertura
+        numeric valor_inicial
+        varchar status
+        timestamp data_fechamento
+        numeric valor_final
+    }
+
     pagamento {
         int id PK
         int encomenda_id FK
-        string status
-        string forma_pagamento
+        int caixa_id FK
+        numeric valor_total
+        numeric valor_sinal
+        numeric saldo_devedor
+        varchar forma_pagamento_sinal
+        varchar status
+        varchar forma_pagamento
+        varchar preference_id
+        bigint mp_payment_id
+        timestamp data_criacao
     }
 
-    categoria ||--o{ produto : "contém"
+    categoria ||--o{ produto : "classifica"
     produto ||--o| receita : "possui"
     cliente ||--o{ encomenda : "solicita"
+    cliente ||--o{ token_autenticacao : "valida_conta"
+    usuario ||--o{ token_autenticacao : "recupera_senha"
     usuario ||--o{ encomenda : "registra"
     usuario ||--o{ encomenda : "entrega"
-    encomenda ||--|{ item_encomenda : "contém"
-    produto ||--o{ item_encomenda : "composto_por"
+    encomenda ||--|{ item_encomenda : "compoe"
+    produto ||--o{ item_encomenda : "referenciado_em"
     encomenda ||--o| pagamento : "gera"
+    caixa ||--o{ pagamento : "vincula_opcional"
 ```
 
 ---
 
-## 2. Dicionário de Dados (Tabelas e Variáveis)
+## 2. Dicionário de Dados Completo
 
-### 2.1. Tabela: `usuario`
-Armazena as informações dos funcionários e administradores que acessam o painel de gerenciamento do sistema.
-
-| Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
-| :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único do usuário. |
-| `usuario_nome` | VARCHAR / TEXT | NOT NULL | Nome completo do usuário funcionário/administrador. |
-| `email` | VARCHAR / TEXT | NOT NULL, UNIQUE | Endereço de e-mail utilizado para autenticação no sistema. |
-| `senha` | VARCHAR / TEXT | NOT NULL | Hash criptografado (BCrypt) da senha do usuário. |
-| `perfil_enum` | INTEGER | NOT NULL | Perfil de acesso do usuário:<br>• `0`: Admin (Administrador)<br>• `1`: Funcionario (Funcionário comum) |
-| `excluido` | BOOLEAN | NOT NULL, DEFAULT false | Flag para exclusão lógica. Se `true`, o usuário está inativo/removido. |
-
----
-
-### 2.2. Tabela: `cliente`
-Armazena os dados cadastrais dos clientes, incluindo informações de login (para o portal do cliente) e restrições alimentares.
+### 2.1. Tabela: `usuario` (Funções F1 e F6)
+Armazena administradores e funcionários internos que operam o painel administrativo e operacional.
 
 | Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único do cliente. |
-| `nome` | VARCHAR / TEXT | NOT NULL | Nome completo do cliente. |
-| `cpf` | VARCHAR / TEXT | NULLABLE | Cadastro de Pessoa Física do cliente (usado para emissão e pagamentos). |
-| `email` | VARCHAR / TEXT | NULLABLE, UNIQUE | E-mail para contato e login na plataforma. |
-| `senha` | VARCHAR / TEXT | NULLABLE | Hash criptografado (BCrypt) da senha (nulo se o cliente for cadastrado apenas por telefone). |
-| `telefone` | VARCHAR / TEXT | NULLABLE | Telefone/WhatsApp do cliente para aviso de encomendas. |
-| `restricao_gluten` | BOOLEAN | NOT NULL, DEFAULT false | Indica se o cliente possui restrição alimentar a glúten. |
-| `restricao_lactose`| BOOLEAN | NOT NULL, DEFAULT false | Indica se o cliente possui restrição alimentar a lactose. |
-| `restricao_acucar` | BOOLEAN | NOT NULL, DEFAULT false | Indica se o cliente possui restrição a açúcar (ex: diabéticos). |
-| `ativo` | BOOLEAN | NOT NULL, DEFAULT true | Flag para exclusão lógica/inatividade do cliente. |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único do operador interno. |
+| `usuario_nome` | `VARCHAR(255)` | `NOT NULL` | Nome completo do administrador ou funcionário. |
+| `email` | `VARCHAR(255)` | `NOT NULL, UNIQUE` | E-mail único utilizado para login e recuperação de senha. |
+| `senha` | `VARCHAR(255)` | `NOT NULL` | Hash criptografado (`BCrypt`) da senha de acesso. |
+| `perfil_enum` | `INTEGER` | `NOT NULL` | Nível de acesso:<br>• `0`: Administrador (acesso total)<br>• `1`: Funcionário (produção, receitas, retirada e histórico) |
+| `excluido` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Flag de exclusão lógica para preservar auditoria de encomendas. |
 
 ---
 
-### 2.3. Tabela: `categoria`
-Agrupa os produtos em categorias lógicas (ex: Pães, Doces, Bolos de Festa).
+### 2.2. Tabela: `cliente` (Funções F2, F9, F11 e F18)
+Armazena dados cadastrais dos clientes (CRM), restrições de segurança alimentar e controle de bloqueio por inadimplência.
 
 | Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único da categoria. |
-| `descricao` | VARCHAR / TEXT | NOT NULL | Nome descritivo da categoria. |
-| `inativo` | BOOLEAN | NOT NULL, DEFAULT false | Indica se a categoria foi desativada no sistema. |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único do cliente. |
+| `nome` | `VARCHAR(255)` | `NOT NULL` | Nome completo do cliente. |
+| `cpf` | `VARCHAR(14)` | `UNIQUE, NULLABLE` | CPF do cliente usado para identificação, cobrança e consulta de inadimplência. |
+| `email` | `VARCHAR(255)` | `UNIQUE, NULLABLE` | E-mail utilizado para login no portal e envio de tokens de segurança. |
+| `senha` | `VARCHAR(255)` | `NULLABLE` | Hash criptografado (`BCrypt`) da senha de acesso ao portal. |
+| `telefone` | `VARCHAR(20)` | `NULLABLE` | Telefone/WhatsApp para contato sobre encomendas. |
+| `restricao_gluten` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Sinaliza restrição alimentar a glúten (doença celíaca/intolerância). |
+| `restricao_lactose` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Sinaliza intolerância/alergia à lactose. |
+| `restricao_acucar` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Sinaliza restrição ao consumo de açúcar (ex.: diabetes). |
+| `ativo` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Flag de exclusão lógica (*soft delete* / LGPD). |
+| `bloqueado_encomendas` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Indica bloqueio administrativo/automático para novos pedidos online. |
+| `motivo_bloqueio` | `VARCHAR(255)` | `NULLABLE` | Justificativa registrada pela administração em caso de bloqueio. |
 
 ---
 
-### 2.4. Tabela: `produto`
-Armazena o catálogo de produtos ofertados pela panificadora Sabor de Mel.
+### 2.3. Tabela: `token_autenticacao` (Função F18)
+Gerencia os códigos numéricos temporários de 6 dígitos enviados por e-mail para recuperação de senha, alteração de perfil e exclusão de conta.
 
 | Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único do produto. |
-| `nome` | VARCHAR / TEXT | NOT NULL | Nome comercial do produto. |
-| `preco_unitario` | NUMERIC(10,2) | NOT NULL | Preço base cobrado por unidade/kg do produto. |
-| `categoria_id` | INTEGER | FK, NOT NULL | ID da categoria (`categoria.id`). |
-| `imagem_url` | VARCHAR / TEXT | NULLABLE | URL da imagem ilustrativa do produto. |
-| `descricao` | VARCHAR / TEXT | NULLABLE | Descrição ou detalhamento dos ingredientes principais e apresentação. |
-| `permite_customizacao`| BOOLEAN | NOT NULL, DEFAULT false | Determina se o produto permite opções de personalização pelo cliente. |
-| `template_customizacao`| JSONB | NULLABLE | Estrutura JSON que dita as opções dinâmicas de customização (ex: sabores, coberturas). |
-| `contem_gluten` | BOOLEAN | NOT NULL, DEFAULT true | Indica se a fórmula padrão do produto contém glúten. |
-| `contem_lactose` | BOOLEAN | NOT NULL, DEFAULT true | Indica se a fórmula padrão do produto contém lactose. |
-| `contem_acucar` | BOOLEAN | NOT NULL, DEFAULT true | Indica se a fórmula padrão do produto contém açúcar. |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único do token gerado. |
+| `cliente_id` | `INTEGER` | `NOT NULL` | Identificador do titular (`> 0` para `cliente.id`; `< 0` para `-usuario.id` na recuperação de senha de operadores). |
+| `codigo_token` | `VARCHAR(6)` | `NOT NULL` | Código numérico aleatório de 6 dígitos enviado por e-mail. |
+| `tipo_token` | `VARCHAR(50)` | `NOT NULL` | Finalidade: `'RECUPERACAO_SENHA'`, `'ALTERACAO_PERFIL'` ou `'EXCLUSAO_CONTA'`. |
+| `data_expiracao` | `TIMESTAMP` | `NOT NULL` | Data/hora limite de validade em UTC (15 minutos após emissão). |
+| `utilizado` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Indica se o código já foi consumido ou invalidado por nova solicitação. |
+| `data_criacao` | `TIMESTAMP` | `DEFAULT NOW() UTC` | Data/hora de geração do token para auditoria. |
 
 ---
 
-### 2.5. Tabela: `receita`
-Guarda as instruções internas de fabricação associadas a cada produto. Acesso restrito a confeiteiros/padeiros.
+### 2.4. Tabela: `categoria` (Função F3)
+Agrupa os itens comercializados pela panificadora em seções do catálogo.
 
 | Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único da receita. |
-| `produto_id` | INTEGER | FK, NOT NULL, UNIQUE| ID do produto associado (`produto.id`). |
-| `ingredientes` | VARCHAR / TEXT | NULLABLE | Lista de insumos e quantidades necessárias. |
-| `modo_preparo` | VARCHAR / TEXT | NULLABLE | Modo de preparo passo a passo. |
-| `rendimento` | VARCHAR / TEXT | NULLABLE | Rendimento estimado da receita (ex: "Rende 1 bolo de 2kg", "20 pãezinhos"). |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único da categoria. |
+| `descricao` | `VARCHAR(255)` | `NOT NULL` | Nome da categoria (ex.: *Bolos de Festa*, *Pães*, *Salgados*). |
+| `inativo` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Flag de inativação lógica quando há produtos vinculados. |
 
 ---
 
-### 2.6. Tabela: `encomenda`
-Representa o cabeçalho do pedido de encomenda feito por um cliente, gerenciando as datas e a entrega.
+### 2.5. Tabela: `produto` (Funções F4, F8 e F9)
+Armazena o catálogo comercial, preços, alérgenos e templates dinâmicos de customização.
 
 | Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único da encomenda. |
-| `cliente_id` | INTEGER | FK, NULLABLE | ID do cliente solicitante (`cliente.id`). Pode ser nulo se o cliente for avulso. |
-| `usuario_id` | INTEGER | FK, NULLABLE | ID do funcionário que registrou a encomenda (`usuario.id`). |
-| `data_retirada` | TIMESTAMP | NOT NULL | Data e hora agendada para a retirada da encomenda na loja. |
-| `valor_total` | NUMERIC(10,2) | NOT NULL | Valor total cobrado pela encomenda inteira. |
-| `status_enum` | INTEGER | NOT NULL | Status de progresso da encomenda:<br>• `0`: Pendente<br>• `1`: Em Andamento (Produção)<br>• `2`: Concluída (Pronta para retirada)<br>• `3`: Cancelada<br>• `4`: Entregue |
-| `observacao` | VARCHAR / TEXT | NULLABLE | Observações gerais sobre a encomenda (ex: "Embalar para presente"). |
-| `data_entrega_real`| TIMESTAMP | NULLABLE | Data e hora exatas da entrega/retirada efetiva. |
-| `usuario_entrega_id`| INTEGER | FK, NULLABLE | ID do funcionário que efetuou a entrega (`usuario.id`). |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único do produto. |
+| `nome` | `VARCHAR(255)` | `NOT NULL` | Nome comercial do produto. |
+| `preco_unitario` | `NUMERIC(10,2)` | `NOT NULL` | Preço unitário base em reais (`R$`). |
+| `categoria_id` | `INTEGER` | `FK, NOT NULL` | Referência obrigatória para `categoria(id)`. |
+| `imagem_url` | `VARCHAR(2048)` | `NULLABLE` | URL da foto comercial exibida na Vitrine Digital e gestão. |
+| `descricao` | `TEXT` | `NULLABLE` | Descrição pública do produto para o catálogo. |
+| `permite_customizacao` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Define se o item exige/permite especificações personalizadas no pedido. |
+| `template_customizacao` | `JSONB` | `NULLABLE` | Lista JSON de campos solicitados na encomenda (ex.: `["Massa", "Recheio", "Frase"]`). |
+| `contem_gluten` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Indica presença de glúten na composição. |
+| `contem_lactose` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Indica presença de lactose na composição. |
+| `contem_acucar` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Indica presença de açúcar na composição. |
 
 ---
 
-### 2.7. Tabela: `item_encomenda`
-Gerencia a lista de produtos contidos em cada encomenda (tabela de junção N:N com atributos adicionais).
+### 2.6. Tabela: `receita` (Funções F5 e F6)
+Guarda a ficha técnica confidencial de fabricação própria (acesso exclusivo à equipe interna).
 
 | Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único do item da encomenda. |
-| `encomenda_id` | INTEGER | FK, NOT NULL | ID da encomenda correspondente (`encomenda.id`) - Deleção em Cascata. |
-| `produto_id` | INTEGER | FK, NOT NULL | ID do produto inserido (`produto.id`). |
-| `quantidade` | INTEGER | NOT NULL | Quantidade solicitada deste produto na encomenda. |
-| `preco_no_ato` | NUMERIC(10,2) | NOT NULL | Preço unitário praticado na compra. Garante a integridade histórica caso o preço do produto mude. |
-| `especificacoes_tecnicas`| JSONB | NULLABLE | Opções de customização salvas para este item específico da encomenda (ex: "Frase do bolo: Parabéns Higor", "Massa de Chocolate"). |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único da ficha técnica. |
+| `produto_id` | `INTEGER` | `FK, NOT NULL, UNIQUE` | Referência exclusiva `1:1` para `produto(id)` (`ON DELETE CASCADE`). |
+| `ingredientes` | `TEXT` | `NULLABLE` | Insumos e proporções da receita. |
+| `modo_preparo` | `TEXT` | `NULLABLE` | Instruções passo a passo de preparo para padaria/confeitaria. |
+| `rendimento` | `VARCHAR(255)` | `NULLABLE` | Rendimento estimado (ex.: *1 bolo de 2 kg*, *100 unidades*). |
 
 ---
 
-### 2.8. Tabela: `pagamento`
-Controla a situação financeira de cada encomenda, registrando a forma de pagamento do sinal ou do saldo.
+### 2.7. Tabela: `encomenda` (Funções F7, F12, F13, F14, F15 e F16)
+Cabeçalho do pedido agendado, controlando prazos, valores, fase de produção e auditoria de retirada.
 
 | Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | SERIAL / INT | PK, NOT NULL | Identificador único do registro de pagamento. |
-| `encomenda_id` | INTEGER | FK, NOT NULL | ID da encomenda associada (`encomenda.id`) - Deleção em Cascata. |
-| `status` | VARCHAR(50) | NOT NULL, DEFAULT 'pendente' | Situação do pagamento (ex: `'pendente'`, `'pago'`, `'cancelado'`). |
-| `forma_pagamento`| VARCHAR(100) | NOT NULL, DEFAULT 'Não informada' | Forma como o pagamento foi/está sendo realizado (ex: `'Pix'`, `'Dinheiro'`, `'Cartão de Crédito'`). |
+| `id` | `SERIAL` | `PK, NOT NULL` | Número identificador único da encomenda. |
+| `cliente_id` | `INTEGER` | `FK, NULLABLE` | Cliente solicitante (`cliente.id`). |
+| `usuario_id` | `INTEGER` | `FK, NULLABLE` | Operador interno que lançou a encomenda (`usuario.id`), quando aplicável. |
+| `data_retirada` | `TIMESTAMP` | `NOT NULL` | Data e horário agendados para retirada na panificadora. |
+| `valor_total` | `NUMERIC(10,2)` | `NOT NULL` | Soma calculada no servidor a partir dos itens da encomenda. |
+| `status_enum` | `INTEGER` | `NOT NULL, DEFAULT 0` | Estado atual:<br>• `0`: Pendente<br>• `1`: Em Andamento (Em Produção)<br>• `2`: Concluída (Pronta para Retirada)<br>• `3`: Cancelada<br>• `4`: Entregue |
+| `observacao` | `TEXT` | `NULLABLE` | Observações gerais do pedido. |
+| `data_entrega_real` | `TIMESTAMP` | `NULLABLE` | Data e hora exatas em que o pedido foi retirado no balcão. |
+| `usuario_entrega_id` | `INTEGER` | `FK, NULLABLE` | Funcionário responsável pela entrega física (`usuario.id`). |
 
 ---
 
-## 3. Descrição Detalhada das Relações e Cardinalidades
+### 2.8. Tabela: `item_encomenda` (Funções F7, F8 e F12)
+Itens que compõem cada encomenda, preservando preço histórico e especificações técnicas em `JSONB`.
 
-1. **`categoria` → `produto` (1:N)**:
-   * Uma **categoria** pode conter múltiplos **produtos**. 
-   * Um **produto** obrigatoriamente pertence a exatamente uma **categoria** (`categoria_id` referenciando `categoria(id)`).
+| Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único da linha de item. |
+| `encomenda_id` | `INTEGER` | `FK, NOT NULL` | Referência para `encomenda(id)` (`ON DELETE CASCADE`). |
+| `produto_id` | `INTEGER` | `FK, NOT NULL` | Referência para `produto(id)`. |
+| `quantidade` | `INTEGER` | `NOT NULL, CHECK (> 0)` | Quantidade encomendada do produto. |
+| `preco_no_ato` | `NUMERIC(10,2)` | `NOT NULL` | Preço unitário vigente no momento da compra (integridade histórica). |
+| `especificacoes_tecnicas` | `JSONB` | `NULLABLE` | Detalhes personalizados escolhidos pelo cliente para este item. |
 
-2. **`produto` ↔ `receita` (1:1)**:
-   * Um **produto** possui no máximo uma **receita** associada.
-   * Uma **receita** é exclusiva de um único **produto** (`produto_id` referenciando `produto(id)` com restrição `UNIQUE`).
+---
 
-3. **`cliente` → `encomenda` (1:N)**:
-   * Um **cliente** cadastrado pode fazer zero ou múltiplas **encomendas**.
-   * Uma **encomenda** pode estar associada a um **cliente** cadastrado (`cliente_id` referenciando `cliente(id)`), ou pode ser criada com `cliente_id = NULL` (cliente avulso/não cadastrado).
+### 2.9. Tabela: `pagamento` (Funções F10, F11, F17, F19 e F20)
+Controla o ciclo financeiro completo da encomenda, integrando pagamentos online via **Mercado Pago Checkout Pro** e pagamentos presenciais liquidados no **Balcão**.
 
-4. **`usuario` → `encomenda` (1:N)**:
-   * Um **usuario** (funcionário/administrador) pode registrar zero ou múltiplas **encomendas** (`usuario_id` referenciando `usuario(id)`).
-   * Um **usuario** também pode entregar zero ou múltiplas **encomendas** (`usuario_entrega_id` referenciando `usuario(id)`).
+| Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador único do registro financeiro. |
+| `encomenda_id` | `INTEGER` | `FK, NOT NULL` | Encomenda vinculada (`encomenda.id`, `ON DELETE CASCADE`). |
+| `caixa_id` | `INTEGER` | `FK, NULLABLE` | Vínculo opcional com `caixa(id)`. |
+| `valor_total` | `NUMERIC(10,2)` | `DEFAULT 0.00` | Valor integral da encomenda. |
+| `valor_sinal` | `NUMERIC(10,2)` | `DEFAULT 0.00` | Valor de entrada/sinal pago antecipadamente, quando aplicável. |
+| `saldo_devedor` | `NUMERIC(10,2)` | `DEFAULT 0.00` | Valor restante em aberto a ser quitado na retirada no balcão. |
+| `forma_pagamento_sinal` | `VARCHAR(100)` | `NULLABLE` | Meio utilizado no pagamento do sinal. |
+| `status` | `VARCHAR(50)` | `NOT NULL, DEFAULT 'pendente'` | Situação financeira: `'pendente'`, `'sinal_pago'`, `'pago'` ou `'cancelado'`. |
+| `forma_pagamento` | `VARCHAR(100)` | `DEFAULT 'Não informada'` | Meio de pagamento principal/final (ex.: *Mercado Pago (Pix)*, *Dinheiro*, *Cartão*). |
+| `preference_id` | `VARCHAR(255)` | `NULLABLE` | Identificador da preferência gerada na API do Mercado Pago. |
+| `mp_payment_id` | `BIGINT` | `NULLABLE` | Identificador único da transação aprovada no Mercado Pago. |
+| `data_criacao` | `TIMESTAMP` | `DEFAULT NOW() UTC` | Data/hora do registro financeiro. |
 
-5. **`encomenda` → `item_encomenda` (1:N)**:
-   * Uma **encomenda** é composta por um ou mais itens (`item_encomenda`). A remoção de uma encomenda remove em cascata todos os seus itens associados.
+---
 
-6. **`produto` → `item_encomenda` (1:N)**:
-   * Um **produto** pode aparecer como item em diversas encomendas (`produto_id` referenciando `produto(id)`).
+### 2.10. Tabela Auxiliar: `caixa`
+Tabela auxiliar de apoio para integridade referencial opcional (`pagamento.caixa_id`).
 
-7. **`encomenda` ↔ `pagamento` (1:1 na prática)**:
-   * Cada **encomenda** gera um registro na tabela **pagamento** para controle do fluxo de caixa e status financeiro (`encomenda_id` referenciando `encomenda(id)` com exclusão em cascata).
+| Nome do Campo | Tipo de Dado | Restrições / Chaves | Descrição |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PK, NOT NULL` | Identificador do turno de caixa. |
+| `data_abertura` | `TIMESTAMP` | `NOT NULL, DEFAULT CURRENT_TIMESTAMP` | Data/hora de abertura. |
+| `valor_inicial` | `NUMERIC(10,2)` | `NOT NULL` | Fundo de troco inicial. |
+| `status` | `VARCHAR(50)` | `NOT NULL, DEFAULT 'Aberto'` | Situação (`'Aberto'` ou `'Fechado'`). |
+| `data_fechamento` | `TIMESTAMP` | `NULLABLE` | Data/hora de encerramento. |
+| `valor_final` | `NUMERIC(10,2)` | `NULLABLE` | Saldo final apurado. |
+
+---
+
+## 3. Relações e Regras de Integridade Referencial
+
+1. **`categoria` (1) → (N) `produto`**: Todo produto pertence obrigatoriamente a uma categoria; categorias com produtos vinculados sofrem apenas inativação lógica (`inativo = TRUE`).
+2. **`produto` (1) ↔ (0..1) `receita`**: Relação `1:1` garantida pela restrição `UNIQUE` em `receita.produto_id`, com `ON DELETE CASCADE`.
+3. **`cliente` (1) → (N) `encomenda`**: Vincula cada encomenda ao cadastro do cliente para rastreamento de restrições alimentares e histórico financeiro por CPF.
+4. **`cliente` / `usuario` (1) → (N) `token_autenticacao`**: Registra os tokens temporários de 6 dígitos para operações sensíveis de conta (validade de 15 minutos e invalidação automática de tokens anteriores).
+5. **`usuario` (1) → (N) `encomenda`**: Duplo relacionamento rastreando quem registrou (`usuario_id`) e quem entregou (`usuario_entrega_id`) cada pedido.
+6. **`encomenda` (1) → (N) `item_encomenda`**: Composição forte (`ON DELETE CASCADE`), armazenando `preco_no_ato` e `especificacoes_tecnicas` em `JSONB`.
+7. **`encomenda` (1) ↔ (1) `pagamento`**: Controla o status de quitação online (Mercado Pago) ou presencial (Balcão), bloqueando a entrega final caso haja pendência financeira não liquidada.
